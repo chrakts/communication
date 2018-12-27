@@ -9,21 +9,24 @@
 #include <avr/interrupt.h>
 #include <uartHardware.h>
 
-extern uint8_t sendFree;
+extern volatile uint8_t sendFree;
+extern volatile uint8_t sendAnswerFree;
 
 /* Hier wird der Pin konfiguriert, der die Interruptueberwachung bekommt, ob der Bus belegt ist */
 
 void initReadMonitor()
 {
-	Busy_Control_Port.INTCTRL  = PORT_INT1LVL0_bm ; // Low-Level interrupt 0 for PORTD
-	Busy_Control_Port.INT1MASK = Busy_Control_Pin;
+	Busy_Control_Port.INTCTRL  = PORT_INT0LVL0_bm ; // Low-Level interrupt 0 for PORTD
+	Busy_Control_Port.INT0MASK = Busy_Control_Pin;
 	Busy_Control_Port.Busy_Control_PinCtrl = PORT_ISC_BOTHEDGES_gc | PORT_OPC_PULLUP_gc ;
 }
 
 ISR( Busy_Control_IntVec )
 {
 	sendFree = false;
-	TCC2.LPER = 42;
+	sendAnswerFree = false;
+	TCC2.LCNT = 20;
+//	LED_GRUEN_ON;
 }
 
 void initBusyCounter()
@@ -38,5 +41,12 @@ void initBusyCounter()
 
 ISR ( TCC2_LUNF_vect )
 {
-	sendFree = true;
+  if(sendAnswerFree == true )
+  {
+      sendFree = true;
+//      LED_GRUEN_OFF;
+  }
+  else
+      sendAnswerFree = true;
+	TCC2.LCNT = 20;
 }

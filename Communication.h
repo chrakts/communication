@@ -19,9 +19,10 @@
 #include "Serial.h"
 
 
-#define SEND_BUFFER_LENGTH 36
+#define SEND_BUFFER_LENGTH 50
 #define WITH_CHECKSUM		4
 #define BROADCAST "BR"
+
 
 class Communication: public Serial
 {
@@ -35,18 +36,26 @@ private:
 	char source[3];
 //functions
 public:
-	Communication(int UartNum, char *mySource,int retryNumber):Serial(UartNum)
+	Communication(int UartNum, char const *mySource,int retryNumber):Serial(UartNum)
 	{
 		retryNum = retryNumber;
 		strncpy(source,mySource,2);
 	};
 	~Communication();
 	void transmit(uint8_t data);
-	bool print(char *text);
-	bool send(char *text,char *target,char infoHeader,char function, char job, char dataType);
-	bool sendStandard(char *text,char *target,char function, char job, char dataType);
-	bool sendInfo(char *text,char *target);
-	bool sendCommand(char *target,char function, char job);
+	bool print(char const *text);
+	bool send(char const *text,char const *target,char infoHeader,char function, char address, char job, char dataType);
+	bool sendStandard(char const *text,char const *target,char function, char address, char job, char dataType);
+	bool sendInfo(char const *text,char const *target);
+	bool sendCommand(char const *target,char function, char address, char job);
+	bool sendAlarm(char const *text,char const *target);
+  bool sendWarning(char const *text,char const *target);
+
+  void sendAnswer(char const *answer,char *answerTo, char function,char address,char job,uint8_t noerror);
+  void sendPureAnswer(char *answerTo, char function,char address,char job,uint8_t noerror);
+  void sendAnswerInt(char *answerTo, char function,char address,char job,uint32_t wert,uint8_t noerror);
+  void sendAnswerDouble(char *answerTo, char function,char address,char job,double wert,uint8_t noerror);
+
 
 protected:
 

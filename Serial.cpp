@@ -24,6 +24,9 @@ uint8_t CTRL_B_2M[] = {150,146,176,145,160,208,144};
 uint8_t CTRL_A_18432K[] = {119,59,39,29,19,14,9};
 uint8_t CTRL_B_18432K[] = {0,0,0,0,0,0,0};
 
+uint8_t CTRL_A_22118400[] = {143,71,47,35,23,17,11};
+uint8_t CTRL_B_22118400[] = {0,0,0,0,0,0,0};
+
 uint8_t CTRL_A_29491200[] = {191,95,63,47,31,23,15};
 uint8_t CTRL_B_29491200[] = {0,0,0,0,0,0,0};
 
@@ -89,6 +92,10 @@ uint8_t tempA,tempB;
 			tempA = CTRL_A_2M[baud];
 			tempB = CTRL_B_2M[baud];
 		break;
+		case 22118400:
+			tempA = CTRL_A_22118400[baud];
+			tempB = CTRL_B_22118400[baud];
+    break;
 		case 29491200:
 			tempA = CTRL_A_29491200[baud];
 			tempB = CTRL_B_29491200[baud];

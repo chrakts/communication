@@ -11,7 +11,8 @@
 #include "CRC_Calc.h"
 
 CRC_Calc crcGlobal;
-uint8_t sendFree;
+volatile uint8_t sendFree;
+volatile uint8_t sendAnswerFree;
 
 // default constructor
 /*Communication(int UartNum):Serial(UartNum)
@@ -28,28 +29,29 @@ void Communication::transmit(uint8_t data)
 	Serial::transmit(data);
 }
 
-bool Communication::send(char *text,char *target,char infoHeader,char function, char job, char dataType)
+bool Communication::send(char const *text,char const *target,char infoHeader,char function, char address, char job, char dataType)
 {
 uint8_t l;
-char extraInfo[4]="";
+char extraInfo[5]="";
 char crcTemp[5];
 
 
 	if (header&WITH_CHECKSUM)
 	{
-		l=strlen(text)+13;
+		l=strlen(text)+14;
 	}
 	else
 	{
-		l=strlen(text)+9;
+		l=strlen(text)+10;
 	}
-	if (infoHeader=='S')
+	if ( (infoHeader=='S') | (infoHeader=='R') | (infoHeader=='r'))
 	{
 		l+=3;
 		extraInfo[0]=function;
-		extraInfo[1]=job;
-		extraInfo[2]=dataType;
-		extraInfo[3]=0;
+		extraInfo[1]=address;
+		extraInfo[2]=job;
+		extraInfo[3]=dataType;
+		extraInfo[4]=0;
 	}
 	sprintf(sendBuffer,"#%02x%c%s%s%c%s%s<",l,header,target,source,infoHeader,extraInfo,text);
 	crcGlobal.Reset();
@@ -59,48 +61,96 @@ char crcTemp[5];
 	return(print(sendBuffer));
 }
 
-bool Communication::sendStandard(char *text,char *target,char function, char job, char dataType)
+bool Communication::sendStandard(char const *text,char const *target,char function, char address, char job, char dataType)
 {
-	send(text,target,'S',function,job,dataType);
+	return(send(text,target,'S',function,address,job,dataType));
 }
 
-bool Communication::sendCommand(char *target,char function, char job)
+bool Communication::sendCommand(char const *target,char function, char address, char job)
 {
-	send("",target,'S',function,job,'0');
+	return(send("",target,'S',function,address,job,'0'));
 }
 
-bool Communication::sendInfo(char *text,char *target)
+bool Communication::sendInfo(char const *text,char const *target)
 {
-	send(text,target,'I','-','-','-');
+	return(send(text,target,'I','-','-','-','-'));
+}
+
+bool Communication::sendAlarm(char const *text,char const *target)
+{
+	return(send(text,target,'A','-','-','-','-'));
+}
+
+bool Communication::sendWarning(char const *text,char const *target)
+{
+	return(send(text,target,'W','-','-','-','-'));
+}
+
+// alt: void Communication::sendAnswer(char *answerTo, char function,char address,char job,char const *answer,uint8_t noerror)
+void Communication::sendAnswer(char const *answer,char *answerTo, char function,char address,char job,uint8_t noerror)
+{
+//char tempString[36];
+//	LED_ROT_ON;
+
+	char iHeader='R';
+	if(!noerror)
+		iHeader = 'r';
+  char dataType = '?';
+  if(strlen(answer)!=0)
+      dataType = 'T';
+//	sprintf(tempString,"%c%c%c%s%c",function,address_KNET,job,answer,sign);
+	send(answer,answerTo,iHeader,function,address,job,dataType);
+//	LED_ROT_OFF; #17DMeH1.36.260311<07d4
+}
+
+void Communication::sendPureAnswer(char *answerTo, char function,char address,char job,uint8_t noerror)
+{
+	sendAnswer("",answerTo,function,address,job,noerror);
+}
+
+void Communication::sendAnswerInt(char *answerTo, char function,char address,char job,uint32_t wert,uint8_t noerror)
+{
+char str[15];
+	sprintf(str,"%lu",wert);
+	sendAnswer(str,answerTo,function,address,job,noerror);
+}
+
+void Communication::sendAnswerDouble(char *answerTo, char function,char address,char job,double wert,uint8_t noerror)
+{
+char temp[20];
+	sprintf(temp,"%lf",wert);
+	sendAnswer(temp,answerTo,function,address,job,noerror);
 }
 
 
-bool Communication::print(char *text)
+bool Communication::print(char const *text)
 {
 	int len = strlen(text);
-	char c='+';
+	char c;
 	int retries=0;
 	bool ret = false;
 	while((ret==false) && (retries<retryNum))
 	{
 		bool error = false;
-		int i = 0;			// Antwort-Zeichen empfangen
+		int i = 0;			// Zeichen empfangen
 		int j = 0;			// Zeichen zur Uebertragung
 		while(sendFree==false) ;
 		input_flush();
 		while(j<len && (error!=true))
 		{
 			transmit(text[j]);
-			sendFree=false;     // notwendig, weil sendFree durch den Interrupt zu spaet gesetzt wird.
 			j++;
 			if (getChar(c))
 			{
-                if (text[i]!=c)
-                {
-                    error = true;
-                    break;
-                }
-                i++;
+				if (text[i]!=c)
+				{
+/*					debug.print("fault1");
+					debug.print(":");
+					debug.print(text);*/
+					error = true;
+					break;
+				}
+				i++;
 			}
 			if (sendFree==true)		// dann ist so lange nichts mehr gesendet worden, dass ein Fehler vorliegen muss
 			{
@@ -113,6 +163,9 @@ bool Communication::print(char *text)
 			{
 				if (text[i]!=c)
 				{
+/*					debug.print("fault2");
+					debug.print(":");
+					debug.print(text);*/
 					error = true;
 					break;
 				}
@@ -130,9 +183,11 @@ bool Communication::print(char *text)
 	{
 /*		debug.println("!!!!!!!!!!!! Mega-Fault !!!!!!!!!!!");
 		debug.print(":");
-		debug.print_bin(c);
-		debug.print(":");
 		debug.print(text);*/
 	}
 	return(ret);
 }
+
+
+
+
