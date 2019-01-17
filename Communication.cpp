@@ -10,9 +10,14 @@
 #include "Communication.h"
 #include "CRC_Calc.h"
 
+#include "ledHardware.h"
+
 CRC_Calc crcGlobal;
 volatile uint8_t sendFree;
 volatile uint8_t sendAnswerFree;
+/*---------------------------------------------------------------------------------------------------*/
+/*---------------------------------------------------------------------------------------------------*/
+/*---------------------------------------------------------------------------------------------------*/
 
 // default constructor
 /*Communication(int UartNum):Serial(UartNum)
@@ -118,7 +123,7 @@ char str[15];
 void Communication::sendAnswerDouble(char *answerTo, char function,char address,char job,double wert,uint8_t noerror)
 {
 char temp[20];
-	sprintf(temp,"%lf",wert);
+	sprintf(temp,"%f",wert);
 	sendAnswer(temp,answerTo,function,address,job,noerror);
 }
 
@@ -139,6 +144,8 @@ bool Communication::print(char const *text)
 		while(j<len && (error!=true))
 		{
 			transmit(text[j]);
+			_delay_us(50);
+			sendFree=false;     // notwendig, weil sendFree durch den Interrupt zu spaet gesetzt wird.
 			j++;
 			if (getChar(c))
 			{

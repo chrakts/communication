@@ -104,6 +104,10 @@ uint8_t tempA,tempB;
 			tempA = CTRL_A_36864K[baud];
 			tempB = CTRL_B_36864K[baud];
 		break;
+		default:
+			tempA = CTRL_A_32M[baud];
+			tempB = CTRL_B_32M[baud];
+    break;
 	}
 
 	if (PortNumber==0)
@@ -134,7 +138,7 @@ void Serial::transmit( uint8_t data )
 				RE_DISABLE_0;
 			#endif
 			TE_ENABLE_0;
-			_delay_us(5);
+			_delay_us(10); // mindestens 8 beim atxmega256a3u, 5 bei stxmega32a4u
 			((USART_t *) &SERIAL_0)->DATA = data; //	UDR0 = data; 			        // Start transmittion
 		#else
 			while( (  ((USART_t *) &SERIAL_0)->STATUS & USART_DREIF_bm ) == 0 );
@@ -157,13 +161,12 @@ void Serial::transmit( uint8_t data )
 				((USART_t *) &SERIAL_1)->CTRLA = USART_TXCINTLVL_1;
 				RE_DISABLE_1;
 				TE_ENABLE_1;
-				_delay_us(5);
+				_delay_us(10);
 			#endif
 			((USART_t *) &SERIAL_1)->DATA = data; //	UDR0 = data; 			        // Start transmittion
 		#else
 			while( (  ((USART_t *) &SERIAL_1)->STATUS & USART_DREIF_bm ) == 0 );
 			((USART_t *) &SERIAL_1)->DATA = data;
-			#pragma message "Reiner RS232-Betrieb fuer UART1 noch nicht getestet"
 		#endif
 	}
 }
@@ -178,11 +181,11 @@ Serial::~Serial()
 void Serial::println(char *text)
 {
 	print(text);
-	print(EOL);
+	print((char *)EOL);
 }
 void Serial::println()
 {
-	print(EOL);
+	print((char *)EOL);
 }
 
 void Serial::println(float Wert, int Stellen)
@@ -216,7 +219,7 @@ void Serial::print10(unsigned long x)
 		y=x/10;transmit( y+0x30);x-=(y*10);
 		transmit( x+0x30);
 	}
-	else print("Err");
+	else print((char *)"Err");
 
 }
 
@@ -366,10 +369,18 @@ uint8_t Serial::input_line( char *input, uint8_t max_length, int16_t timeout )
 
 SIGNAL(R_COMPLETE_INT_0)
 {
-	UART0_ring_received++;
-	if(UART0_ring_received == UART0_RING_BUFFER_SIZE)
-		UART0_ring_received = 0;
-	UART0_ring_buffer[UART0_ring_received]=((USART_t *) &SERIAL_0)->DATA;
+char c;
+
+	c= ((USART_t *) &SERIAL_0)->DATA;
+
+// das auskommentierte braucht man nur, wenn der RS485 durch das Umschalten falsche Nullen schickt
+	if (c!=0)
+	{
+    UART0_ring_received++;
+    if(UART0_ring_received == UART0_RING_BUFFER_SIZE)
+      UART0_ring_received = 0;
+    UART0_ring_buffer[UART0_ring_received]=c;
+	}
 }
 
 SIGNAL(R_COMPLETE_INT_1)
