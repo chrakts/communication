@@ -10,7 +10,7 @@
 #include "Communication.h"
 #include "CRC_Calc.h"
 
-#include "ledHardware.h"
+//#include "ledHardware.h"
 
 CRC_Calc crcGlobal;
 volatile uint8_t sendFree;
