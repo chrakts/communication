@@ -126,7 +126,7 @@ uint8_t tempA,tempB;
 
 void Serial::transmit( uint8_t data )
 {
-	if (PortNumber==0)
+	if (PortNumber==0) // Achtung: Implementierung entsprcht noch nicht dem USE_RS485_1 !!!!!!!!!!!!!!!!!!!!!!!!!!!
 	{
 		#ifdef USE_RS485_0
 			while (  ( ((PORT_t *) &SERIAL_PORT_0)->IN & SERIAL_TE_PIN_0 ) != 0  )
@@ -154,7 +154,7 @@ void Serial::transmit( uint8_t data )
 			#ifdef USE_RS485_FEEDBACK_1
 				TE_ENABLE_1;
 				((USART_t *) &SERIAL_1)->CTRLB = USART_TXEN_bm; // dient dazu den Receiver zurueckzusetzen
-				_delay_us(5);
+				_delay_us(10);
 				((USART_t *) &SERIAL_1)->CTRLB = USART_RXEN_bm | USART_TXEN_bm;
 			#else
 				((USART_t *) &SERIAL_1)->CTRLB = USART_TXEN_bm;
