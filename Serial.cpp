@@ -223,6 +223,31 @@ void Serial::print10(unsigned long x)
 
 }
 
+void Serial::print10(int32_t x)
+{
+	int32_t y;
+  if( x&0x80000000 )
+    transmit('-');
+  else
+    transmit('+');
+  x = x & 0x7fffffff;
+	if (x<2147483647L)
+	{
+		y=x/1000000000;transmit( y+0x30);x-=(y*1000000000);
+		y=x/100000000;transmit( y+0x30);x-=(y*100000000);
+		y=x/10000000;transmit( y+0x30);x-=(y*10000000);
+		y=x/1000000;transmit( y+0x30);x-=(y*1000000);
+		y=x/100000;transmit( y+0x30);x-=(y*100000);
+		y=x/10000;transmit( y+0x30);x-=(y*10000);
+		y=x/1000;transmit( y+0x30);x-=(y*1000);
+		y=x/100;transmit( y+0x30);x-=(y*100);
+		y=x/10;transmit( y+0x30);x-=(y*10);
+		transmit( x+0x30);
+	}
+	else print((char *)"Err");
+
+}
+
 void Serial::print(unsigned char text,int type)
 {
 
@@ -244,6 +269,21 @@ void Serial::print_bin(uint8_t x, char ch0='0', char ch1='1')
   }
 }
 
+/*-----------------  19.03.2017  --------------------
+ *  Display 8bit bin value
+ *   print_bin(0xAA,		 -> 10101010
+ *   print_bin(0xAA,'0','1') -> 10101010
+ *   print_bin(0xAA,'_','*') -> *_*_*_*_
+ *--------------------------------------------------*/
+void Serial::print_bin(uint32_t x, char ch0='0', char ch1='1')
+{
+  uint32_t i;
+  for (i=0x80000000;i>0;i>>=1)
+  {
+    if ((x&i)==0) transmit(ch0);
+    else transmit(ch1);
+  }
+}
 
 /*-----------------28.08.99 22:49-------------------
  *   Simple pformat function (no fp, and strings),

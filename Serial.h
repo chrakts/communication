@@ -12,11 +12,12 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <uartHardware.h>
 #include <avr/io.h>
 #include <util/delay.h>
 #include <avr/pgmspace.h>
 #include <avr/interrupt.h>
-#include <uartHardware.h>
+
 
 class Serial
 {
@@ -38,7 +39,9 @@ public:
 	virtual bool print(char *text);
 	void print(unsigned char text,int type);
 	void print_bin(uint8_t x, char ch0, char ch1);
-	void print10(unsigned long x);
+	void print_bin(uint32_t x, char ch0='0', char ch1='1');
+  void print10(unsigned long x);
+  void print10(int32_t x);
 	uint8_t pformat(const char *format, ...);
 	bool getChar(char & got_byte);
 	void input_flush( );
