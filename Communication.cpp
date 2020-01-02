@@ -38,6 +38,7 @@ bool Communication::send(char const *text,char const *target,char infoHeader,cha
 {
 uint8_t l;
 char extraInfo[5]="";
+char parameterEndChar;
 char crcTemp[5];
 
 
@@ -58,7 +59,12 @@ char crcTemp[5];
 		extraInfo[3]=dataType;
 		extraInfo[4]=0;
 	}
-	sprintf(sendBuffer,"#%02x%c%s%s%c%s%s<",l,header,target,source,infoHeader,extraInfo,text);
+	if( strlen(text)>0 )
+    parameterEndChar='<';
+  else
+    parameterEndChar=0;
+	//sprintf(sendBuffer,"#%02x%c%s%s%c%s%s<",l,header,target,source,infoHeader,extraInfo,text);
+	sprintf(sendBuffer,"#%02x%c%s%s%c%s%s%c",l,header,target,source,infoHeader,extraInfo,text,parameterEndChar);
 	crcGlobal.Reset();
 	crcGlobal.String(sendBuffer);
 	crcGlobal.Get_CRC(crcTemp);
@@ -127,7 +133,18 @@ char temp[20];
 	sendAnswer(temp,answerTo,function,address,job,noerror);
 }
 
+#ifdef NO_BUSY_CONTROL
+bool Communication::print(char const *text)
+{
+	uint8_t i;
+  for(i=0;i<strlen(text);i++)
+  {
+    transmit(text[i]);
+  }
+  return(true);
+}
 
+#else
 bool Communication::print(char const *text)
 {
 	int len = strlen(text);
@@ -195,6 +212,6 @@ bool Communication::print(char const *text)
 	return(ret);
 }
 
-
+#endif // NO_BUSY_CONTROL
 
 
