@@ -12,7 +12,7 @@
 
 //#include "ledHardware.h"
 
-CRC_Calc crcGlobal;
+
 volatile uint8_t sendFree;
 volatile uint8_t sendAnswerFree;
 /*---------------------------------------------------------------------------------------------------*/
@@ -28,6 +28,17 @@ volatile uint8_t sendAnswerFree;
 Communication::~Communication()
 {
 } //~Communication
+
+void Communication::setAlternativeNode(char *altNode)
+{
+  strcpy(saveSource,source);
+  strcpy(source,altNode);
+}
+
+void Communication::resetNode()
+{
+  strcpy(source,saveSource);
+}
 
 void Communication::transmit(uint8_t data)
 {
@@ -121,9 +132,16 @@ void Communication::sendPureAnswer(char *answerTo, char function,char address,ch
 
 void Communication::sendAnswerInt(char *answerTo, char function,char address,char job,uint32_t wert,uint8_t noerror)
 {
-char str[15];
+char str[25];
 	sprintf(str,"%lu",wert);
 	sendAnswer(str,answerTo,function,address,job,noerror);
+}
+
+void Communication::sendStandardInt(char const *target, char function,char address,char job,int32_t wert)
+{
+char str[25];
+	sprintf(str,"%ld",wert);
+	sendStandard(str,target,function,address,job,'T');
 }
 
 void Communication::sendAnswerDouble(char *answerTo, char function,char address,char job,double wert,uint8_t noerror)

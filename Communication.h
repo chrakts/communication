@@ -17,7 +17,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "Serial.h"
-
+#include "CRC_Calc.h"
 
 #define SEND_BUFFER_LENGTH 50
 #define WITH_CHECKSUM		4
@@ -29,11 +29,13 @@ class Communication: public Serial
 //variables
 public:
 protected:
+	char sendBuffer[SEND_BUFFER_LENGTH];
+	char source[3];
+	char saveSource[3];
+	uint8_t header = 64+WITH_CHECKSUM;
+	CRC_Calc crcGlobal;
 private:
 	uint8_t retryNum;
-	char sendBuffer[SEND_BUFFER_LENGTH];
-	uint8_t header = 64+WITH_CHECKSUM;
-	char source[3];
 //functions
 public:
 	Communication(int UartNum, char const *mySource,int retryNumber):Serial(UartNum)
@@ -42,10 +44,13 @@ public:
 		strncpy(source,mySource,2);
 	};
 	~Communication();
+	void setAlternativeNode(char *altNode);
+	void resetNode();
 	void transmit(uint8_t data);
-	bool print(char const *text);
-	bool send(char const *text,char const *target,char infoHeader,char function, char address, char job, char dataType);
+	virtual bool print(char const *text);
+	virtual bool send(char const *text,char const *target,char infoHeader,char function, char address, char job, char dataType);
 	bool sendStandard(char const *text,char const *target,char function, char address, char job, char dataType);
+	void sendStandardInt(char const *target, char function,char address,char job,int32_t wert);
 	bool sendInfo(char const *text,char const *target);
 	bool sendCommand(char const *target,char function, char address, char job);
 	bool sendAlarm(char const *text,char const *target);
