@@ -29,6 +29,18 @@ Communication::~Communication()
 {
 } //~Communication
 
+void Communication::setEncryption(uint8_t *random=nullptr)
+{
+  header |= WITH_AES256;
+  random = random;
+}
+
+void Communication::clearEncryption()
+{
+  header &= ~WITH_AES256;
+  random = nullptr;
+}
+
 void Communication::setAlternativeNode(char *altNode)
 {
   strcpy(saveSource,source);
@@ -47,41 +59,173 @@ void Communication::transmit(uint8_t data)
 
 bool Communication::send(char const *text,char const *target,char infoHeader,char function, char address, char job, char dataType)
 {
-uint8_t l;
+uint8_t l,i;
 char extraInfo[5]="";
 char parameterEndChar;
 char crcTemp[5];
+char locText[33];
 
 
-	if (header&WITH_CHECKSUM)
-	{
-		l=strlen(text)+14;
-	}
-	else
-	{
-		l=strlen(text)+10;
-	}
-	if ( (infoHeader=='S') | (infoHeader=='R') | (infoHeader=='r'))
-	{
-		l+=3;
-		extraInfo[0]=function;
-		extraInfo[1]=address;
-		extraInfo[2]=job;
-		extraInfo[3]=dataType;
-		extraInfo[4]=0;
-	}
-	if( strlen(text)>0 )
+  l=strlen(text);
+  if(header & WITH_AES256)
+  {
+    if(random!=nullptr)
+    {
+      for (i=0;i<l;i++)
+        locText[i] = random[i] ^ text[i];
+      for (i=l;i<16;i++)
+        locText[i] = random[i];
+    }
+    else
+    {
+      for (i=0;i<l;i++)
+        locText[i] = text[i];
+      for (i=l;i<16;i++)
+        locText[i] = 0;
+    }
+    l=32;
+    encryptDataDirect((uint8_t*)locText);
+  }
+  l+=10;
+  if (header & WITH_CHECKSUM)
+    l+=4;
+
+  if ( (infoHeader=='S') | (infoHeader=='R') | (infoHeader=='r'))
+  {
+    l+=3;
+    extraInfo[0]=function;
+    extraInfo[1]=address;
+    extraInfo[2]=job;
+    extraInfo[3]=dataType;
+    extraInfo[4]=0;
+  }
+  if( strlen(text)>0 )
     parameterEndChar='<';
   else
     parameterEndChar=0;
-	//sprintf(sendBuffer,"#%02x%c%s%s%c%s%s<",l,header,target,source,infoHeader,extraInfo,text);
-	sprintf(sendBuffer,"#%02x%c%s%s%c%s%s%c",l,header,target,source,infoHeader,extraInfo,text,parameterEndChar);
-	crcGlobal.Reset();
-	crcGlobal.String(sendBuffer);
-	crcGlobal.Get_CRC(crcTemp);
-	sprintf(sendBuffer,"%s%s\r\n",sendBuffer,crcTemp);
-	return(print(sendBuffer));
+
+  if(header & WITH_AES256)
+  {
+    encryptDataWait();
+    getEncryptData((uint8_t*)locText);
+    for(i=7;i>=0;i++)
+      locText[2*i]=locText[i];
+    char temp;
+    for(i=0;i<16;i+=2)
+    {
+      temp=locText[i];
+      locText[i] = ( (temp &0xf0)>>4 )+65;
+      locText[i+1] = ( (temp &0x0f) )+65;
+    }
+    locText[32] = '\000';
+    sprintf(sendBuffer,"#%02x%c%s%s%c%s%s%c",l,header,target,source,infoHeader,extraInfo,locText,parameterEndChar);
+  }
+  else
+    sprintf(sendBuffer,"#%02x%c%s%s%c%s%s%c",l,header,target,source,infoHeader,extraInfo,text,parameterEndChar);
+  crcGlobal.Reset();
+  crcGlobal.String(sendBuffer);
+  crcGlobal.Get_CRC(crcTemp);
+  sprintf(sendBuffer,"%s%s\r\n",sendBuffer,crcTemp);
+
+  clearEncryption();
+  return(print(sendBuffer));
 }
+
+void Communication::encryptSetKey(uint8_t *newkey)
+{
+uint8_t dummy[16];
+
+  key = newkey;
+	encryptStatus = ENCRYPT_KEYDEFINED;
+	encryptAes = &AES;
+	encryptData(dummy);
+
+}
+
+uint8_t Communication::encryptDataDirect(uint8_t *data)
+{
+int i;
+
+/*	if ( (encryptStatus&ENCRYPT_KEYDEFINED) )
+	{*/
+		encryptAes->CTRL = AES_RESET_bm ; // setzt das AES-Modul zurück
+
+		for (i=0;i<16;i++)
+			encryptAes->KEY=key[i];
+		for (i=0;i<16;i++)
+			encryptAes->STATE=data[i];
+		encryptAes->CTRL = AES_START_bm ;
+		return(0);
+/*	}
+	else
+		return(-1);*/
+}
+
+uint8_t Communication::encryptDataWait()
+{
+int i;
+
+	while(!(encryptAes->STATUS & AES_SRIF_bm))
+		;
+	for (i=0;i<16;i++)
+		subkey[i] = encryptAes->KEY;
+	encryptStatus |= ENCRYPT_SUBKEYDEFINED;
+	return(0);
+}
+
+uint8_t Communication::encryptData(uint8_t *data)
+{
+	if ( encryptDataDirect(data)==0 )
+	{
+		encryptDataWait();
+		return(0);
+	}
+	else
+	{
+		return(-1);
+	}
+}
+
+uint8_t Communication::decryptData(uint8_t *data)
+{
+	int i;
+
+	if (encryptStatus&ENCRYPT_SUBKEYDEFINED)
+	{
+		encryptAes->CTRL = AES_RESET_bm  | AES_DECRYPT_bm; // setzt das AES-Modul zurück
+		_delay_us(100);
+		encryptAes->CTRL = AES_DECRYPT_bm; // setzt das AES-Modul zurück
+
+		for (i=0;i<16;i++)
+			encryptAes->KEY=subkey[i];
+		for (i=0;i<16;i++)
+			encryptAes->STATE=data[i];
+		encryptAes->CTRL = AES_START_bm  | AES_DECRYPT_bm;
+
+		while(!(encryptAes->STATUS & AES_SRIF_bm))
+			;
+		//		encryptStatus = Encrypt_SubKeyDefined;
+		return(0);
+	}
+	else
+		return(-1);
+}
+
+
+void Communication::getEncryptData(uint8_t *data)
+{
+int i;
+	for (i=0;i<16;i++)
+		data[i] = encryptAes->STATE;
+}
+
+void Communication::getEncryptKey(uint8_t *keysave)
+{
+	int i;
+	for (i=0;i<16;i++)
+	keysave[i] = encryptAes->KEY;
+}
+
 
 bool Communication::sendStandard(char const *text,char const *target,char function, char address, char job, char dataType)
 {

@@ -21,8 +21,10 @@
 
 #define SEND_BUFFER_LENGTH 50
 #define WITH_CHECKSUM		4
+#define WITH_AES256 2
 #define BROADCAST "BR"
 
+enum EncryptMode {ENCRYPT_UNDEFINED=0, ENCRYPT_KEYDEFINED=1, ENCRYPT_SUBKEYDEFINED=2};
 
 class Communication: public Serial
 {
@@ -34,6 +36,13 @@ protected:
 	char saveSource[3];
 	uint8_t header = 64+WITH_CHECKSUM;
 	CRC_Calc crcGlobal;
+
+	uint8_t *random=nullptr;
+	uint8_t *key;
+	uint8_t subkey[16];
+	AES_t   *encryptAes;   // Encrypt_aes
+	uint8_t encryptStatus;
+
 private:
 	uint8_t retryNum;
 //functions
@@ -45,6 +54,16 @@ public:
 	};
 	~Communication();
 	void setAlternativeNode(char *altNode);
+	void setEncryption(uint8_t *random=nullptr);
+  void clearEncryption();
+  void encryptSetKey(uint8_t *newkey);
+  uint8_t encryptDataDirect(uint8_t *data);
+  uint8_t encryptDataWait();
+  uint8_t encryptData(uint8_t *data);
+  uint8_t decryptData(uint8_t *data);
+  void getEncryptData(uint8_t *data);
+  void getEncryptKey(uint8_t *keysave);
+
 	void resetNode();
 	void transmit(uint8_t data);
 	virtual bool print(char const *text);
