@@ -33,12 +33,12 @@ public:
 
 	void open(uint8_t baud, uint32_t frq);
 	virtual void transmit( uint8_t data );
-	void println(char *text);
+	void println(const char *text);
 	void println();
 	void println(float Wert, int Stellen);
-	virtual bool print(char *text);
+	virtual bool print(const char *text);
 	void print(unsigned char text,int type);
-	void print_bin(uint8_t x, char ch0, char ch1);
+	void print_bin(uint8_t x, char ch0='0', char ch1='1');
 	void print_bin(uint32_t x, char ch0='0', char ch1='1');
   void print10(unsigned long x);
   void print10(int32_t x);

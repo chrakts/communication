@@ -178,7 +178,7 @@ Serial::~Serial()
 {
 } //~Serial
 
-void Serial::println(char *text)
+void Serial::println(const char *text)
 {
 	print(text);
 	print((char *)EOL);
@@ -193,7 +193,7 @@ void Serial::println(float Wert, int Stellen)
 	pformat("%f",Wert);
 }
 
-bool Serial::print(char *text)
+bool Serial::print(const char *text)
 {
 	while(*text)
 	{
@@ -259,7 +259,7 @@ void Serial::print(unsigned char text,int type)
  *   print_bin(0xAA,'0','1') -> 10101010
  *   print_bin(0xAA,'_','*') -> *_*_*_*_
  *--------------------------------------------------*/
-void Serial::print_bin(uint8_t x, char ch0='0', char ch1='1')
+void Serial::print_bin(uint8_t x, char ch0, char ch1)
 {
   uint8_t i;
   for (i=128;i>0;i>>=1)
@@ -275,7 +275,7 @@ void Serial::print_bin(uint8_t x, char ch0='0', char ch1='1')
  *   print_bin(0xAA,'0','1') -> 10101010
  *   print_bin(0xAA,'_','*') -> *_*_*_*_
  *--------------------------------------------------*/
-void Serial::print_bin(uint32_t x, char ch0='0', char ch1='1')
+void Serial::print_bin(uint32_t x, char ch0, char ch1)
 {
   uint32_t i;
   for (i=0x80000000;i>0;i>>=1)
@@ -471,3 +471,5 @@ SIGNAL(T_COMPLETE_INT_1)
 	#else
 	#endif
 }
+
+
