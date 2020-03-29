@@ -19,7 +19,7 @@
 #include "Serial.h"
 #include "CRC_Calc.h"
 
-#define SEND_BUFFER_LENGTH 50
+#define SEND_BUFFER_LENGTH 60
 #define WITH_CHECKSUM		4
 #define WITH_AES256 2
 #define BROADCAST "BR"
@@ -69,16 +69,20 @@ public:
 	virtual bool print(char const *text);
 	virtual bool send(char const *text,char const *target,char infoHeader,char function, char address, char job, char dataType);
 	bool sendStandard(char const *text,char const *target,char function, char address, char job, char dataType);
+	bool sendByteArray(uint8_t const *bytes,size_t length,char const *target,char infoHeader,char function, char address, char job);
+
 	void sendStandardInt(char const *target, char function,char address,char job,int32_t wert);
 	bool sendInfo(char const *text,char const *target);
 	bool sendCommand(char const *target,char function, char address, char job);
 	bool sendAlarm(char const *text,char const *target);
   bool sendWarning(char const *text,char const *target);
+  bool sendStandardByteArray(uint8_t const *text,size_t length,char const *target,char function, char address, char job, char dataType);
 
   void sendAnswer(char const *answer,char *answerTo, char function,char address,char job,uint8_t noerror);
   void sendPureAnswer(char *answerTo, char function,char address,char job,uint8_t noerror);
   void sendAnswerInt(char *answerTo, char function,char address,char job,uint32_t wert,uint8_t noerror);
   void sendAnswerDouble(char *answerTo, char function,char address,char job,double wert,uint8_t noerror);
+  bool broadcastFloat(float wert,char function,char address,char job);
 
 
 protected:

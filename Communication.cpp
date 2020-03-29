@@ -9,6 +9,8 @@
 
 #include "Communication.h"
 #include "CRC_Calc.h"
+#include "../loraSupervisor/myConstants.h"
+
 
 //#include "ledHardware.h"
 
@@ -29,7 +31,7 @@ Communication::~Communication()
 {
 } //~Communication
 
-void Communication::setEncryption(uint8_t *random=nullptr)
+void Communication::setEncryption(uint8_t *random)
 {
   header |= WITH_AES256;
   random = random;
@@ -59,7 +61,7 @@ void Communication::transmit(uint8_t data)
 
 bool Communication::send(char const *text,char const *target,char infoHeader,char function, char address, char job, char dataType)
 {
-uint8_t l,i;
+int8_t l,i;
 char extraInfo[5]="";
 char parameterEndChar;
 char crcTemp[5];
@@ -108,16 +110,17 @@ char locText[33];
   {
     encryptDataWait();
     getEncryptData((uint8_t*)locText);
-    for(i=7;i>=0;i++)
+    for(i=15;i>=0;i-=1)
       locText[2*i]=locText[i];
     char temp;
-    for(i=0;i<16;i+=2)
+    for(i=0;i<32;i+=2)
     {
       temp=locText[i];
       locText[i] = ( (temp &0xf0)>>4 )+65;
       locText[i+1] = ( (temp &0x0f) )+65;
     }
     locText[32] = '\000';
+
     sprintf(sendBuffer,"#%02x%c%s%s%c%s%s%c",l,header,target,source,infoHeader,extraInfo,locText,parameterEndChar);
   }
   else
@@ -128,6 +131,84 @@ char locText[33];
   sprintf(sendBuffer,"%s%s\r\n",sendBuffer,crcTemp);
 
   clearEncryption();
+
+  return(print(sendBuffer));
+}
+
+bool Communication::sendByteArray(uint8_t const *bytes,size_t length,char const *target,char infoHeader,char function, char address, char job)
+{
+int8_t j;
+uint8_t i;
+size_t l;
+char extraInfo[5]="";
+char crcTemp[5];
+char locText[33];
+
+  if(header & WITH_AES256)
+  {
+    if(random!=nullptr)
+    {
+      for (i=0;i<length;i++)
+        locText[i] = random[i] ^ bytes[i];
+      for (i=length;i<16;i++)
+        locText[i] = random[i];
+    }
+    else
+    {
+      for (i=0;i<length;i++)
+        locText[i] = bytes[i];
+      for (i=length;i<16;i++)
+        locText[i] = 0;
+    }
+    l=32;
+    encryptDataDirect((uint8_t*)locText);
+  }
+  else
+  {
+    for(i=0;i<length;i++)
+      locText[i] = (char) bytes[i];
+    l=length*2;
+  }
+  l+=10;
+  if (header & WITH_CHECKSUM)
+    l+=4;
+
+  if ( (infoHeader=='S') | (infoHeader=='R') | (infoHeader=='r'))
+  {
+    l+=3;
+    extraInfo[0]=function;
+    extraInfo[1]=address;
+    extraInfo[2]=job;
+    extraInfo[3]='T';
+    extraInfo[4]=0;
+  }
+
+  if(header & WITH_AES256)
+  {
+    encryptDataWait();
+    getEncryptData((uint8_t*)locText);
+  }
+
+  for(j=15;j>=0;j-=1)
+    locText[2*j]=locText[j];
+  char temp;
+  for(i=0;i<32;i+=2)
+  {
+    temp=locText[i];
+    locText[i] = ( (temp &0xf0)>>4 )+65;
+    locText[i+1] = ( (temp &0x0f) )+65;
+  }
+  locText[32] = '\000';
+
+  sprintf(sendBuffer,"#%02x%c%s%s%c%s%s<",l,header,target,source,infoHeader,extraInfo,locText);
+
+  crcGlobal.Reset();
+  crcGlobal.String(sendBuffer);
+  crcGlobal.Get_CRC(crcTemp);
+  sprintf(sendBuffer,"%s%s\r\n",sendBuffer,crcTemp);
+
+  clearEncryption();
+
   return(print(sendBuffer));
 }
 
@@ -232,9 +313,25 @@ bool Communication::sendStandard(char const *text,char const *target,char functi
 	return(send(text,target,'S',function,address,job,dataType));
 }
 
+bool Communication::sendStandardByteArray(uint8_t const *text,size_t length,char const *target,char function, char address, char job, char dataType)
+{
+  char *buffer;
+  uint8_t i;
+  buffer = (char *) malloc(length*2+1);
+  for(i=0;i<length;i++)
+  {
+    buffer[2*i] = (text[i]>>4) + 65;
+    buffer[2*i+1] = (text[i]&0x0f) + 65;
+  }
+  buffer[2*length] = '\000';
+  i = send(buffer,target,'S',function,address,job,dataType);
+	free(buffer);
+	return(i);
+}
+
 bool Communication::sendCommand(char const *target,char function, char address, char job)
 {
-	return(send("",target,'S',function,address,job,'0'));
+	return(send("",target,'S',function,address,job,'?'));
 }
 
 bool Communication::sendInfo(char const *text,char const *target)
@@ -252,6 +349,12 @@ bool Communication::sendWarning(char const *text,char const *target)
 	return(send(text,target,'W','-','-','-','-'));
 }
 
+bool Communication::broadcastFloat(float wert,char function,char address,char job)
+{
+char text[10];
+  sprintf(text,"%.4f",(double)wert);
+  return(sendStandard(text,BROADCAST,function,address,job,'F'));
+}
 // alt: void Communication::sendAnswer(char *answerTo, char function,char address,char job,char const *answer,uint8_t noerror)
 void Communication::sendAnswer(char const *answer,char *answerTo, char function,char address,char job,uint8_t noerror)
 {
