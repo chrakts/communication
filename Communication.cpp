@@ -9,14 +9,11 @@
 
 #include "Communication.h"
 #include "CRC_Calc.h"
-#include "../loraSupervisor/myConstants.h"
 
-
-//#include "ledHardware.h"
-
-
-volatile uint8_t sendFree;
-volatile uint8_t sendAnswerFree;
+volatile uint8_t sendFree_0;
+volatile uint8_t sendAnswerFree_0;
+volatile uint8_t sendFree_1;
+volatile uint8_t sendAnswerFree_1;
 /*---------------------------------------------------------------------------------------------------*/
 /*---------------------------------------------------------------------------------------------------*/
 /*---------------------------------------------------------------------------------------------------*/
@@ -31,10 +28,10 @@ Communication::~Communication()
 {
 } //~Communication
 
-void Communication::setEncryption(uint8_t *random)
+void Communication::setEncryption(uint8_t *_random)
 {
   header |= WITH_AES256;
-  random = random;
+  random = _random;
 }
 
 void Communication::clearEncryption()
@@ -189,16 +186,16 @@ char locText[33];
     getEncryptData((uint8_t*)locText);
   }
 
-  for(j=15;j>=0;j-=1)
+  for(j=length-1;j>=0;j-=1)   // war 15
     locText[2*j]=locText[j];
   char temp;
-  for(i=0;i<32;i+=2)
+  for(i=0;i<length*2;i+=2)
   {
     temp=locText[i];
     locText[i] = ( (temp &0xf0)>>4 )+65;
     locText[i+1] = ( (temp &0x0f) )+65;
   }
-  locText[32] = '\000';
+  locText[length*2] = '\000';
 
   sprintf(sendBuffer,"#%02x%c%s%s%c%s%s<",l,header,target,source,infoHeader,extraInfo,locText);
 
@@ -326,7 +323,7 @@ bool Communication::sendStandardByteArray(uint8_t const *text,size_t length,char
   buffer[2*length] = '\000';
   i = send(buffer,target,'S',function,address,job,dataType);
 	free(buffer);
-	return(i);
+	return((bool)i);
 }
 
 bool Communication::sendCommand(char const *target,char function, char address, char job)
@@ -354,6 +351,18 @@ bool Communication::broadcastFloat(float wert,char function,char address,char jo
 char text[10];
   sprintf(text,"%.4f",(double)wert);
   return(sendStandard(text,BROADCAST,function,address,job,'F'));
+}
+bool Communication::broadcastUInt8(uint8_t wert,char function,char address,char job)
+{
+char text[10];
+  sprintf(text,"%hu",wert);
+  return(sendStandard(text,BROADCAST,function,address,job,'T'));
+}
+bool Communication::broadcastUInt16(uint8_t wert,char function,char address,char job)
+{
+char text[10];
+  sprintf(text,"%u",wert);
+  return(sendStandard(text,BROADCAST,function,address,job,'T'));
 }
 // alt: void Communication::sendAnswer(char *answerTo, char function,char address,char job,char const *answer,uint8_t noerror)
 void Communication::sendAnswer(char const *answer,char *answerTo, char function,char address,char job,uint8_t noerror)
@@ -398,85 +407,185 @@ char temp[20];
 	sendAnswer(temp,answerTo,function,address,job,noerror);
 }
 
-#ifdef NO_BUSY_CONTROL
+
 bool Communication::print(char const *text)
 {
-	uint8_t i;
-  for(i=0;i<strlen(text);i++)
+  if( sendFree==nullptr )
   {
-    transmit(text[i]);
+    uint8_t i;
+    for(i=0;i<strlen(text);i++)
+    {
+      transmit(text[i]);
+    }
+    return(true);
+    }
+  else
+  {
+    int len = strlen(text);
+    char c;
+    int retries=0;
+    bool ret = false;
+    while((ret==false) && (retries<retryNum))
+    {
+      bool error = false;
+      int i = 0;			// Zeichen empfangen
+      int j = 0;			// Zeichen zur Uebertragung
+      while(*sendFree==false) ;
+      input_flush();
+      while(j<len && (error!=true))
+      {
+        transmit(text[j]);
+        _delay_us(50);
+        *sendFree=false;     // notwendig, weil sendFree durch den Interrupt zu spaet gesetzt wird.
+        j++;
+        if (getChar(c))
+        {
+          if (text[i]!=c)
+          {
+  /*					debug.print("fault1");
+            debug.print(":");
+            debug.print(text);*/
+            error = true;
+            break;
+          }
+          i++;
+        }
+        if (*sendFree==true)		// dann ist so lange nichts mehr gesendet worden, dass ein Fehler vorliegen muss
+        {
+          error=true;
+        }
+      }
+      while( (i<len) && (error!=true) )
+      {
+        if (getChar(c))
+        {
+          if (text[i]!=c)
+          {
+  /*					debug.print("fault2");
+            debug.print(":");
+            debug.print(text);*/
+            error = true;
+            break;
+          }
+          i++;
+        }
+        if (*sendFree==true)		// dann ist so lange nichts mehr gesendet worden, dass ein Fehler vorliegen muss
+        {
+          error=true;
+        }
+      }
+      retries++;
+      ret = (i==j);
+    }
+    if (ret==false)
+    {
+  /*		debug.println("!!!!!!!!!!!! Mega-Fault !!!!!!!!!!!");
+      debug.print(":");
+      debug.print(text);*/
+    }
+    return(ret);
+
   }
-  return(true);
 }
 
-#else
-bool Communication::print(char const *text)
+void Communication::initReadMonitor(uint8_t num)
 {
-	int len = strlen(text);
-	char c;
-	int retries=0;
-	bool ret = false;
-	while((ret==false) && (retries<retryNum))
-	{
-		bool error = false;
-		int i = 0;			// Zeichen empfangen
-		int j = 0;			// Zeichen zur Uebertragung
-		while(sendFree==false) ;
-		input_flush();
-		while(j<len && (error!=true))
-		{
-			transmit(text[j]);
-			_delay_us(50);
-			sendFree=false;     // notwendig, weil sendFree durch den Interrupt zu spaet gesetzt wird.
-			j++;
-			if (getChar(c))
-			{
-				if (text[i]!=c)
-				{
-/*					debug.print("fault1");
-					debug.print(":");
-					debug.print(text);*/
-					error = true;
-					break;
-				}
-				i++;
-			}
-			if (sendFree==true)		// dann ist so lange nichts mehr gesendet worden, dass ein Fehler vorliegen muss
-			{
-				error=true;
-			}
-		}
-		while( (i<len) && (error!=true) )
-		{
-			if (getChar(c))
-			{
-				if (text[i]!=c)
-				{
-/*					debug.print("fault2");
-					debug.print(":");
-					debug.print(text);*/
-					error = true;
-					break;
-				}
-				i++;
-			}
-			if (sendFree==true)		// dann ist so lange nichts mehr gesendet worden, dass ein Fehler vorliegen muss
-			{
-				error=true;
-			}
-		}
-		retries++;
-		ret = (i==j);
-	}
-	if (ret==false)
-	{
-/*		debug.println("!!!!!!!!!!!! Mega-Fault !!!!!!!!!!!");
-		debug.print(":");
-		debug.print(text);*/
-	}
-	return(ret);
+  if(num==0)
+  {
+    Busy_Control_Port_0.INTCTRL  = PORT_INT0LVL0_bm | PORT_INT0LVL1_bm; // Low-Level interrupt 0 for PORTD
+    Busy_Control_Port_0.INT0MASK = Busy_Control_Pin_0;
+    Busy_Control_Port_0.Busy_Control_PinCtrl_0 = PORT_ISC_BOTHEDGES_gc | PORT_OPC_PULLUP_gc ;
+  }
+  else
+  {
+    Busy_Control_Port_1.INTCTRL  = PORT_INT0LVL0_bm | PORT_INT0LVL1_bm; // Low-Level interrupt 0 for PORTD
+    Busy_Control_Port_1.INT0MASK = Busy_Control_Pin_1;
+    Busy_Control_Port_1.Busy_Control_PinCtrl_1 = PORT_ISC_BOTHEDGES_gc | PORT_OPC_PULLUP_gc ;
+  }
 }
 
-#endif // NO_BUSY_CONTROL
+void Communication::deInitReadMonitor(uint8_t num)
+{
+  if(num==0)
+  {
+    Busy_Control_Port_0.INTCTRL  = 0; // Low-Level interrupt 0 for PORTD
+    Busy_Control_Port_0.INT0MASK = Busy_Control_Pin_0;
+    Busy_Control_Port_0.Busy_Control_PinCtrl_0 = PORT_ISC_INPUT_DISABLE_gc | PORT_OPC_PULLUP_gc ;
+  }
+  else
+  {
+    Busy_Control_Port_1.INTCTRL  = 0; // Low-Level interrupt 0 for PORTD
+    Busy_Control_Port_1.INT0MASK = Busy_Control_Pin_1;
+    Busy_Control_Port_1.Busy_Control_PinCtrl_1 = PORT_ISC_INPUT_DISABLE_gc | PORT_OPC_PULLUP_gc ;
+  }
+}
 
+void Communication::initBusyCounter(uint8_t num)
+{
+  if(num==0)
+  {
+    TCC2.CTRLE = TC2_BYTEM_SPLITMODE_gc;
+    TCC2.CTRLA = TC2_CLKSEL_DIV256_gc;
+    TCC2.CTRLB = 0;
+    TCC2.INTCTRLA = TC2_LUNFINTLVL_HI_gc;
+    TCC2.LCNT = 128; // 128
+    TCC2.LPER = 42;
+  }
+  else
+  {
+    TCC2.CTRLE = TC2_BYTEM_SPLITMODE_gc;
+    TCC2.CTRLA = TC2_CLKSEL_DIV256_gc;
+    TCC2.CTRLB = 0;
+    TCC2.INTCTRLA = TC2_LUNFINTLVL_HI_gc;
+    TCC2.HCNT = 128; // 128
+    TCC2.HPER = 42;
+  }
+}
 
+#if USE_BUSY_0 == true
+ISR( Busy_Control_IntVec_0 )
+{
+  sendFree_0 = false;
+  sendAnswerFree_0 = false;
+  TCC2.LCNT = 20;
+//  LED_ROT_ON;
+}
+#endif // USE_BUSY_0
+
+#if USE_BUSY_1 == true
+ISR( Busy_Control_IntVec_1 )
+{
+  sendFree_1 = false;
+  sendAnswerFree_1 = false;
+  TCC2.LCNT = 20;
+  //LED_ROT_ON;
+}
+#endif // USE_BUSY_1
+
+#if USE_BUSY_0 == true
+ISR ( TCC2_LUNF_vect )
+{
+  if(sendAnswerFree_0 == true )
+  {
+      sendFree_0 = true;
+      //LED_ROT_OFF;
+  }
+  else
+      sendAnswerFree_0 = true;
+  TCC2.LCNT = 20;
+}
+#endif // USE_BUSY_0
+
+#if USE_BUSY_1==true
+ISR ( TCC2_HUNF_vect )
+{
+  if(sendAnswerFree_1 == true )
+  {
+      sendFree_1 = true;
+      //LED_ROT_OFF;
+  }
+  else
+      sendAnswerFree_1 = true;
+  TCC2.HCNT = 20;
+}
+#endif // USE_BUSY_1

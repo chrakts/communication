@@ -9,6 +9,10 @@
 #ifndef CMULTIBUSY_H_
 #define CMULTIBUSY_H_
 
+
+#pragma message("!!!!!!!!!!!!!!!!!! Das Modul CmultiBusy nicht mehr verwenden. Ist im Modul Communication.h integriert !!!!!!!!!!!!!!!!!!!!!!")
+
+
 void initReadMonitor(void);
 void deInitReadMonitor(void);
 void initBusyCounter(void);

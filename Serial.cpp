@@ -7,6 +7,7 @@
 
 
 #include "Serial.h"
+#include "uartHardware.h"
 
 volatile uint8_t UART0_ring_received;
 volatile  char UART0_ring_buffer[UART0_RING_BUFFER_SIZE];
@@ -38,13 +39,27 @@ uint8_t CTRL_B_36864K[] = {0,0,0,0,0,0,0};
 Serial::Serial(int UartNum)
 {
 	PortNumber = UartNum;
-	if (UartNum==0)
+
+} //Serial
+
+void Serial::open(uint8_t baud, uint32_t frq)
+{
+
+	if (PortNumber==0)
 	{
 	    SERIAL_PORT_0.DIRSET = SERIAL_TX_PIN_0;
 	    SERIAL_PORT_0.DIRCLR = SERIAL_RX_PIN_0;
-		#ifdef USE_RS485_0
-            SERIAL_PORT_0.DIRSET = SERIAL_TE_PIN_0 | SERIAL_RE_PIN_0;
-        #endif
+#ifdef USE_RS485_0
+      SERIAL_PORT_0.DIRSET = SERIAL_TE_PIN_0 | SERIAL_RE_PIN_0;
+      SERIAL_PORT_0.OUTCLR = SERIAL_TE_PIN_0;
+#pragma message "Verwende RS485 bei UART0"
+#endif
+#ifdef USE_RS485_FEEDBACK_0
+      SERIAL_PORT_0.OUTCLR = SERIAL_RE_PIN_0;
+#pragma message "Verwende Feedback bei UART0"
+#else
+      SERIAL_PORT_0.OUTSET = SERIAL_RE_PIN_0;
+#endif // USE_RS485_FEEDBACK_0
 		ring_received = &UART0_ring_received;
 		ring_buffer   = UART0_ring_buffer; // #-#-#
 		((USART_t *) &SERIAL_0)->CTRLB = USART_RXEN_bm | USART_TXEN_bm;
@@ -59,6 +74,17 @@ Serial::Serial(int UartNum)
 	}
 	else
 	{
+	    SERIAL_PORT_1.DIRSET = SERIAL_TX_PIN_1;
+	    SERIAL_PORT_1.DIRCLR = SERIAL_RX_PIN_1;
+#ifdef USE_RS485_1
+      SERIAL_PORT_1.DIRSET = SERIAL_TE_PIN_1 | SERIAL_RE_PIN_1;
+      SERIAL_PORT_1.OUTCLR = SERIAL_TE_PIN_1;
+#endif
+#ifdef USE_RS485_FEEDBACK_1
+      SERIAL_PORT_1.OUTCLR = SERIAL_RE_PIN_1;
+#else
+      SERIAL_PORT_1.OUTSET = SERIAL_RE_PIN_1;
+#endif // USE_RS485_FEEDBACK_1
 		ring_received = &UART1_ring_received;
 		ring_buffer   = UART1_ring_buffer; // #-#-#
 		((USART_t *) &SERIAL_1)->CTRLB = USART_RXEN_bm | USART_TXEN_bm;
@@ -73,11 +99,9 @@ Serial::Serial(int UartNum)
 	}
 	ring_interpreted = 0;
 	*ring_received = 0;
-} //Serial
 
-void Serial::open(uint8_t baud, uint32_t frq)
-{
-uint8_t tempA,tempB;
+
+  uint8_t tempA,tempB;
 	switch(frq)
 	{
 		case 32000000:

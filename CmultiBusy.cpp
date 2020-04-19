@@ -17,25 +17,54 @@ extern volatile uint8_t sendAnswerFree;
 
 void initReadMonitor()
 {
-  Busy_Control_Port.INTCTRL  = PORT_INT0LVL0_bm | PORT_INT0LVL1_bm; // Low-Level interrupt 0 for PORTD
-  Busy_Control_Port.INT0MASK = Busy_Control_Pin;
-  Busy_Control_Port.Busy_Control_PinCtrl = PORT_ISC_BOTHEDGES_gc | PORT_OPC_PULLUP_gc ;
+#ifdef USE_BUSY_0
+  Busy_Control_Port_0.INTCTRL  = PORT_INT0LVL0_bm | PORT_INT0LVL1_bm; // Low-Level interrupt 0 for PORTD
+  Busy_Control_Port_0.INT0MASK = Busy_Control_Pin_0;
+  Busy_Control_Port_0.Busy_Control_PinCtrl_0 = PORT_ISC_BOTHEDGES_gc | PORT_OPC_PULLUP_gc ;
+#endif // USE_BUSY_0
+
+#ifdef USE_BUSY_1
+  Busy_Control_Port_1.INTCTRL  = PORT_INT0LVL0_bm | PORT_INT0LVL1_bm; // Low-Level interrupt 0 for PORTD
+  Busy_Control_Port_1.INT0MASK = Busy_Control_Pin_1;
+  Busy_Control_Port_1.Busy_Control_PinCtrl_1 = PORT_ISC_BOTHEDGES_gc | PORT_OPC_PULLUP_gc ;
+#endif // USE_BUSY_1
 }
 
 void deInitReadMonitor()
 {
-  Busy_Control_Port.INTCTRL  = 0; // Low-Level interrupt 0 for PORTD
-  Busy_Control_Port.INT0MASK = Busy_Control_Pin;
-  Busy_Control_Port.Busy_Control_PinCtrl = PORT_ISC_INPUT_DISABLE_gc | PORT_OPC_PULLUP_gc ;
+#ifdef USE_BUSY_0
+  Busy_Control_Port_0.INTCTRL  = 0; // Low-Level interrupt 0 for PORTD
+  Busy_Control_Port_0.INT0MASK = Busy_Control_Pin_0;
+  Busy_Control_Port_0.Busy_Control_PinCtrl_0 = PORT_ISC_INPUT_DISABLE_gc | PORT_OPC_PULLUP_gc ;
+#endif // USE_BUSY_0
+#ifdef USE_BUSY_1
+  Busy_Control_Port_1.INTCTRL  = 0; // Low-Level interrupt 0 for PORTD
+  Busy_Control_Port_1.INT0MASK = Busy_Control_Pin_1;
+  Busy_Control_Port_1.Busy_Control_PinCtrl_1 = PORT_ISC_INPUT_DISABLE_gc | PORT_OPC_PULLUP_gc ;
+#endif // USE_BUSY_1
 }
 
-ISR( Busy_Control_IntVec )
+#ifdef USE_BUSY_0
+ISR( Busy_Control_IntVec_0 )
 {
   sendFree = false;
   sendAnswerFree = false;
   TCC2.LCNT = 20;
   //LED_ROT_ON;
 }
+#endif // USE_BUSY_0
+
+#ifdef USE_BUSY_1
+ISR( Busy_Control_IntVec_1 )
+{
+  sendFree = false;
+  sendAnswerFree = false;
+  TCC2.LCNT = 20;
+  //LED_ROT_ON;
+}
+#endif // USE_BUSY_0
+
+
 
 void initBusyCounter()
 {

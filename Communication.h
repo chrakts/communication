@@ -24,6 +24,11 @@
 #define WITH_AES256 2
 #define BROADCAST "BR"
 
+extern volatile uint8_t sendFree_0;
+extern volatile uint8_t sendAnswerFree_0;
+extern volatile uint8_t sendFree_1;
+extern volatile uint8_t sendAnswerFree_1;
+
 enum EncryptMode {ENCRYPT_UNDEFINED=0, ENCRYPT_KEYDEFINED=1, ENCRYPT_SUBKEYDEFINED=2};
 
 class Communication: public Serial
@@ -31,6 +36,8 @@ class Communication: public Serial
 //variables
 public:
 protected:
+  volatile uint8_t *sendFree=nullptr;
+  volatile uint8_t *sendAnswerFree=nullptr;
 	char sendBuffer[SEND_BUFFER_LENGTH];
 	char source[3];
 	char saveSource[3];
@@ -47,14 +54,33 @@ private:
 	uint8_t retryNum;
 //functions
 public:
-	Communication(int UartNum, char const *mySource,int retryNumber):Serial(UartNum)
+	Communication(int UartNum, char const *mySource,int retryNumber, bool busyControl):Serial(UartNum)
 	{
 		retryNum = retryNumber;
 		strncpy(source,mySource,2);
+		if(busyControl)
+		{
+      this->initReadMonitor(UartNum);
+      this->initBusyCounter(UartNum);
+		}
+		if(UartNum==0)
+		{
+#if USE_BUSY_0==true
+      sendFree = &sendFree_0;
+      sendAnswerFree = &sendAnswerFree_0;
+#endif // USE_BUSY_0
+		}
+		else
+		{
+#if USE_BUSY_1==true
+      sendFree = &sendFree_1;
+      sendAnswerFree = &sendAnswerFree_1;
+#endif // USE_BUSY_1
+		}
 	};
 	~Communication();
 	void setAlternativeNode(char *altNode);
-	void setEncryption(uint8_t *random=nullptr);
+	void setEncryption(uint8_t *_random=nullptr);
   void clearEncryption();
   void encryptSetKey(uint8_t *newkey);
   uint8_t encryptDataDirect(uint8_t *data);
@@ -83,7 +109,11 @@ public:
   void sendAnswerInt(char *answerTo, char function,char address,char job,uint32_t wert,uint8_t noerror);
   void sendAnswerDouble(char *answerTo, char function,char address,char job,double wert,uint8_t noerror);
   bool broadcastFloat(float wert,char function,char address,char job);
-
+  bool broadcastUInt8(uint8_t wert,char function,char address,char job);
+  bool broadcastUInt16(uint8_t wert,char function,char address,char job);
+  void initReadMonitor(uint8_t num);
+  void deInitReadMonitor(uint8_t num);
+  void initBusyCounter(uint8_t num);
 
 protected:
 

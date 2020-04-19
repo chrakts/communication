@@ -59,6 +59,8 @@ public:
 
 protected:
 private:
+
+
 	int8_t PortNumber {-1} ;
 	uint8_t ring_buffer_size;
 	volatile uint8_t  *ring_received;
