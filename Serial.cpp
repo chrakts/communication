@@ -79,9 +79,11 @@ void Serial::open(uint8_t baud, uint32_t frq)
 #ifdef USE_RS485_1
       SERIAL_PORT_1.DIRSET = SERIAL_TE_PIN_1 | SERIAL_RE_PIN_1;
       SERIAL_PORT_1.OUTCLR = SERIAL_TE_PIN_1;
+#pragma message "Verwende RS485 bei UART0"
 #endif
 #ifdef USE_RS485_FEEDBACK_1
       SERIAL_PORT_1.OUTCLR = SERIAL_RE_PIN_1;
+#pragma message "Verwende Feedback bei UART0"
 #else
       SERIAL_PORT_1.OUTSET = SERIAL_RE_PIN_1;
 #endif // USE_RS485_FEEDBACK_1
@@ -155,15 +157,17 @@ void Serial::transmit( uint8_t data )
 		#ifdef USE_RS485_0
 			while (  ( ((PORT_t *) &SERIAL_PORT_0)->IN & SERIAL_TE_PIN_0 ) != 0  )
 			;
-			#ifdef USE_RS485_FEEDBACK_0
-			#else
-				((USART_t *) &SERIAL_0)->CTRLB = USART_TXEN_bm;
-				((USART_t *) &SERIAL_0)->CTRLA = USART_TXCINTLVL_0;
-				RE_DISABLE_0;
-			#endif
-			TE_ENABLE_0;
-			_delay_us(10); // mindestens 8 beim atxmega256a3u, 5 bei stxmega32a4u
-			((USART_t *) &SERIAL_0)->DATA = data; //	UDR0 = data; 			        // Start transmittion
+    #ifdef USE_RS485_FEEDBACK_0
+      //((USART_t *) &SERIAL_0)->CTRLB = USART_TXEN_bm | USART_RXEN_bm; // ############################
+      //_delay_us(50);// ############################
+    #else
+      ((USART_t *) &SERIAL_0)->CTRLB = USART_TXEN_bm;
+      ((USART_t *) &SERIAL_0)->CTRLA = USART_TXCINTLVL_0;
+      RE_DISABLE_0;
+    #endif
+      TE_ENABLE_0;
+      _delay_us(10); // mindestens 8 beim atxmega256a3u, 5 bei stxmega32a4u
+      ((USART_t *) &SERIAL_0)->DATA = data; //	UDR0 = data; 			        // Start transmittion
 		#else
 			while( (  ((USART_t *) &SERIAL_0)->STATUS & USART_DREIF_bm ) == 0 );
 			((USART_t *) &SERIAL_0)->DATA = data;
@@ -175,19 +179,15 @@ void Serial::transmit( uint8_t data )
 		#ifdef USE_RS485_1
 			while (  ( ((PORT_t *) &SERIAL_PORT_1)->IN & SERIAL_TE_PIN_1 ) != 0  )
 			;
-			#ifdef USE_RS485_FEEDBACK_1
-				TE_ENABLE_1;
-				((USART_t *) &SERIAL_1)->CTRLB = USART_TXEN_bm; // dient dazu den Receiver zurueckzusetzen
-				_delay_us(10);
-				((USART_t *) &SERIAL_1)->CTRLB = USART_RXEN_bm | USART_TXEN_bm;
-			#else
-				((USART_t *) &SERIAL_1)->CTRLB = USART_TXEN_bm;
-				((USART_t *) &SERIAL_1)->CTRLA = USART_TXCINTLVL_1;
-				RE_DISABLE_1;
-				TE_ENABLE_1;
-				_delay_us(10);
-			#endif
-			((USART_t *) &SERIAL_1)->DATA = data; //	UDR0 = data; 			        // Start transmittion
+    #ifdef USE_RS485_FEEDBACK_1
+    #else
+      ((USART_t *) &SERIAL_1)->CTRLB = USART_TXEN_bm;
+      ((USART_t *) &SERIAL_1)->CTRLA = USART_TXCINTLVL_1;
+      RE_DISABLE_1;
+    #endif
+      TE_ENABLE_1;
+      _delay_us(10); // mindestens 8 beim atxmega256a3u, 5 bei stxmega32a4u
+      ((USART_t *) &SERIAL_1)->DATA = data; //	UDR0 = data; 			        // Start transmittion
 		#else
 			while( (  ((USART_t *) &SERIAL_1)->STATUS & USART_DREIF_bm ) == 0 );
 			((USART_t *) &SERIAL_1)->DATA = data;
@@ -471,6 +471,7 @@ SIGNAL(T_COMPLETE_INT_0)
 		TE_DISABLE_0;
 		((USART_t *) &SERIAL_0)->STATUS = USART_RXCIF_bm;
 		#ifdef USE_RS485_FEEDBACK_0
+			//((USART_t *) &SERIAL_0)->CTRLB = USART_RXEN_bm; // #####################################################
 		#else
 			RE_ENABLE_0;
 			((USART_t *) &SERIAL_0)->CTRLB = USART_RXEN_bm | USART_TXEN_bm;

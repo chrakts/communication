@@ -49,6 +49,7 @@ protected:
 	uint8_t subkey[16];
 	AES_t   *encryptAes;   // Encrypt_aes
 	uint8_t encryptStatus;
+	uint8_t beSilent=false;
 
 private:
 	uint8_t retryNum;
@@ -114,6 +115,8 @@ public:
   void initReadMonitor(uint8_t num);
   void deInitReadMonitor(uint8_t num);
   void initBusyCounter(uint8_t num);
+  void setBeSilent(uint8_t sil);
+  uint8_t getBeSilent();
 
 protected:
 

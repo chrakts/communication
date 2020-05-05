@@ -488,18 +488,28 @@ bool Communication::print(char const *text)
   }
 }
 
+void Communication::setBeSilent(uint8_t sil)
+{
+  this->beSilent=sil;
+}
+
+uint8_t Communication::getBeSilent()
+{
+  return(this->beSilent);
+}
+
 void Communication::initReadMonitor(uint8_t num)
 {
   if(num==0)
   {
-    Busy_Control_Port_0.INTCTRL  = PORT_INT0LVL0_bm | PORT_INT0LVL1_bm; // Low-Level interrupt 0 for PORTD
+    Busy_Control_Port_0.INTCTRL  |= PORT_INT0LVL_HI_gc; // High-Level interrupt 0 for PORTD
     Busy_Control_Port_0.INT0MASK = Busy_Control_Pin_0;
     Busy_Control_Port_0.Busy_Control_PinCtrl_0 = PORT_ISC_BOTHEDGES_gc | PORT_OPC_PULLUP_gc ;
   }
   else
   {
-    Busy_Control_Port_1.INTCTRL  = PORT_INT0LVL0_bm | PORT_INT0LVL1_bm; // Low-Level interrupt 0 for PORTD
-    Busy_Control_Port_1.INT0MASK = Busy_Control_Pin_1;
+    Busy_Control_Port_1.INTCTRL  |= PORT_INT1LVL_HI_gc; // High-Level interrupt 0 for PORTD
+    Busy_Control_Port_1.INT1MASK = Busy_Control_Pin_1;
     Busy_Control_Port_1.Busy_Control_PinCtrl_1 = PORT_ISC_BOTHEDGES_gc | PORT_OPC_PULLUP_gc ;
   }
 }
@@ -508,13 +518,13 @@ void Communication::deInitReadMonitor(uint8_t num)
 {
   if(num==0)
   {
-    Busy_Control_Port_0.INTCTRL  = 0; // Low-Level interrupt 0 for PORTD
-    Busy_Control_Port_0.INT0MASK = Busy_Control_Pin_0;
+    Busy_Control_Port_0.INTCTRL  &= ~PORT_INT0LVL_HI_gc;
+    Busy_Control_Port_0.INT0MASK = 0;
     Busy_Control_Port_0.Busy_Control_PinCtrl_0 = PORT_ISC_INPUT_DISABLE_gc | PORT_OPC_PULLUP_gc ;
   }
   else
   {
-    Busy_Control_Port_1.INTCTRL  = 0; // Low-Level interrupt 0 for PORTD
+    Busy_Control_Port_1.INTCTRL  &= ~PORT_INT1LVL_HI_gc;
     Busy_Control_Port_1.INT0MASK = Busy_Control_Pin_1;
     Busy_Control_Port_1.Busy_Control_PinCtrl_1 = PORT_ISC_INPUT_DISABLE_gc | PORT_OPC_PULLUP_gc ;
   }
@@ -524,21 +534,21 @@ void Communication::initBusyCounter(uint8_t num)
 {
   if(num==0)
   {
-    TCC2.CTRLE = TC2_BYTEM_SPLITMODE_gc;
-    TCC2.CTRLA = TC2_CLKSEL_DIV256_gc;
-    TCC2.CTRLB = 0;
-    TCC2.INTCTRLA = TC2_LUNFINTLVL_HI_gc;
-    TCC2.LCNT = 128; // 128
-    TCC2.LPER = 42;
+    BUSY_TIMER.CTRLE = TC2_BYTEM_SPLITMODE_gc;
+    BUSY_TIMER.CTRLA = TC2_CLKSEL_DIV256_gc;
+    BUSY_TIMER.CTRLB = 0;
+    BUSY_TIMER.INTCTRLA = TC2_LUNFINTLVL_HI_gc;
+    BUSY_TIMER.LCNT = 128; // 128
+    BUSY_TIMER.LPER = 42;
   }
   else
   {
-    TCC2.CTRLE = TC2_BYTEM_SPLITMODE_gc;
-    TCC2.CTRLA = TC2_CLKSEL_DIV256_gc;
-    TCC2.CTRLB = 0;
-    TCC2.INTCTRLA = TC2_LUNFINTLVL_HI_gc;
-    TCC2.HCNT = 128; // 128
-    TCC2.HPER = 42;
+    BUSY_TIMER.CTRLE = TC2_BYTEM_SPLITMODE_gc;
+    BUSY_TIMER.CTRLA = TC2_CLKSEL_DIV256_gc;
+    BUSY_TIMER.CTRLB = 0;
+    BUSY_TIMER.INTCTRLA = TC2_LUNFINTLVL_HI_gc;
+    BUSY_TIMER.HCNT = 128; // 128
+    BUSY_TIMER.HPER = 42;
   }
 }
 
@@ -547,7 +557,7 @@ ISR( Busy_Control_IntVec_0 )
 {
   sendFree_0 = false;
   sendAnswerFree_0 = false;
-  TCC2.LCNT = 20;
+  BUSY_TIMER.LCNT = 20;
 //  LED_ROT_ON;
 }
 #endif // USE_BUSY_0
@@ -557,13 +567,13 @@ ISR( Busy_Control_IntVec_1 )
 {
   sendFree_1 = false;
   sendAnswerFree_1 = false;
-  TCC2.LCNT = 20;
+  BUSY_TIMER.LCNT = 20;
   //LED_ROT_ON;
 }
 #endif // USE_BUSY_1
 
 #if USE_BUSY_0 == true
-ISR ( TCC2_LUNF_vect )
+ISR ( Busy_Control_TimVec_0 )
 {
   if(sendAnswerFree_0 == true )
   {
@@ -572,12 +582,12 @@ ISR ( TCC2_LUNF_vect )
   }
   else
       sendAnswerFree_0 = true;
-  TCC2.LCNT = 20;
+  BUSY_TIMER.LCNT = 20;
 }
 #endif // USE_BUSY_0
 
 #if USE_BUSY_1==true
-ISR ( TCC2_HUNF_vect )
+ISR ( Busy_Control_TimVec_1 )
 {
   if(sendAnswerFree_1 == true )
   {
@@ -586,6 +596,6 @@ ISR ( TCC2_HUNF_vect )
   }
   else
       sendAnswerFree_1 = true;
-  TCC2.HCNT = 20;
+  BUSY_TIMER.HCNT = 20;
 }
 #endif // USE_BUSY_1
