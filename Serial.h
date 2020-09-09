@@ -40,7 +40,7 @@ public:
 	void print(unsigned char text,int type);
 	void print_bin(uint8_t x, char ch0='0', char ch1='1');
 	void print_bin(uint32_t x, char ch0='0', char ch1='1');
-  void print10(unsigned long x);
+  void print10(uint32_t x);
   void print10(int32_t x);
 	uint8_t pformat(const char *format, ...);
 	bool getChar(char & got_byte);
