@@ -358,10 +358,16 @@ char text[10];
   sprintf(text,"%hu",wert);
   return(sendStandard(text,BROADCAST,function,address,job,'T'));
 }
-bool Communication::broadcastUInt16(uint8_t wert,char function,char address,char job)
+bool Communication::broadcastUInt16(uint16_t wert,char function,char address,char job)
 {
 char text[10];
   sprintf(text,"%u",wert);
+  return(sendStandard(text,BROADCAST,function,address,job,'T'));
+}
+bool Communication::broadcastInt16(int16_t wert,char function,char address,char job)
+{
+char text[10];
+  sprintf(text,"%d",wert);
   return(sendStandard(text,BROADCAST,function,address,job,'T'));
 }
 // alt: void Communication::sendAnswer(char *answerTo, char function,char address,char job,char const *answer,uint8_t noerror)
@@ -397,6 +403,13 @@ void Communication::sendStandardInt(char const *target, char function,char addre
 {
 char str[25];
 	sprintf(str,"%ld",wert);
+	sendStandard(str,target,function,address,job,'T');
+}
+
+void Communication::sendStandardInt64(char const *target, char function,char address,char job,int64_t wert)
+{
+char str[25];
+	sprintf(str,"%lld",wert);
 	sendStandard(str,target,function,address,job,'T');
 }
 
