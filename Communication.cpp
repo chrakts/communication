@@ -352,6 +352,14 @@ char text[10];
   sprintf(text,"%.4f",(double)wert);
   return(sendStandard(text,BROADCAST,function,address,job,'F'));
 }
+
+bool Communication::broadcastDouble(double wert,char function,char address,char job)
+{
+char text[10];
+  sprintf(text,"%.4f",wert);
+  return(sendStandard(text,BROADCAST,function,address,job,'F'));
+}
+
 bool Communication::broadcastUInt8(uint8_t wert,char function,char address,char job)
 {
 char text[10];
@@ -403,6 +411,13 @@ void Communication::sendStandardInt(char const *target, char function,char addre
 {
 char str[25];
 	sprintf(str,"%ld",wert);
+	sendStandard(str,target,function,address,job,'T');
+}
+
+void Communication::sendStandardDouble(char const *target, char function,char address,char job,double wert)
+{
+char str[25];
+	sprintf(str,"%f",wert);
 	sendStandard(str,target,function,address,job,'T');
 }
 

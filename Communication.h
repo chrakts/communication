@@ -100,6 +100,7 @@ public:
 
 	void sendStandardInt(char const *target, char function,char address,char job,int32_t wert);
   void sendStandardInt64(char const *target, char function,char address,char job,int64_t wert);
+  void sendStandardDouble(char const *target, char function,char address,char job,double wert);
 	bool sendInfo(char const *text,char const *target);
 	bool sendCommand(char const *target,char function, char address, char job);
 	bool sendAlarm(char const *text,char const *target);
@@ -111,6 +112,7 @@ public:
   void sendAnswerInt(char *answerTo, char function,char address,char job,uint32_t wert,uint8_t noerror);
   void sendAnswerDouble(char *answerTo, char function,char address,char job,double wert,uint8_t noerror);
   bool broadcastFloat(float wert,char function,char address,char job);
+  bool broadcastDouble(double wert,char function,char address,char job);
   bool broadcastUInt8(uint8_t wert,char function,char address,char job);
   bool broadcastUInt16(uint16_t wert,char function,char address,char job);
   bool broadcastInt16(int16_t wert,char function,char address,char job);
