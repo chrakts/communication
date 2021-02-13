@@ -79,11 +79,11 @@ void Serial::open(uint8_t baud, uint32_t frq)
 #ifdef USE_RS485_1
       SERIAL_PORT_1.DIRSET = SERIAL_TE_PIN_1 | SERIAL_RE_PIN_1;
       SERIAL_PORT_1.OUTCLR = SERIAL_TE_PIN_1;
-#pragma message "Verwende RS485 bei UART0"
+#pragma message "Verwende RS485 bei UART1"
 #endif
 #ifdef USE_RS485_FEEDBACK_1
       SERIAL_PORT_1.OUTCLR = SERIAL_RE_PIN_1;
-#pragma message "Verwende Feedback bei UART0"
+#pragma message "Verwende Feedback bei UART1"
 #else
       SERIAL_PORT_1.OUTSET = SERIAL_RE_PIN_1;
 #endif // USE_RS485_FEEDBACK_1
