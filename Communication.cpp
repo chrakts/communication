@@ -66,6 +66,14 @@ char locText[33];
 
 
   l=strlen(text);
+  if( l>0 )
+  {
+    parameterEndChar='<';
+    l+=1;
+  }
+  else
+    parameterEndChar=0;
+
   if(header & WITH_AES256)
   {
     if(random!=nullptr)
@@ -85,7 +93,7 @@ char locText[33];
     l=32;
     encryptDataDirect((uint8_t*)locText);
   }
-  l+=10;
+  l+=9;
   if (header & WITH_CHECKSUM)
     l+=4;
 
@@ -98,10 +106,6 @@ char locText[33];
     extraInfo[3]=dataType;
     extraInfo[4]=0;
   }
-  if( strlen(text)>0 )
-    parameterEndChar='<';
-  else
-    parameterEndChar=0;
 
   if(header & WITH_AES256)
   {
@@ -360,6 +364,16 @@ char text[10];
   return(sendStandard(text,BROADCAST,function,address,job,'F'));
 }
 
+bool Communication::broadcast(char function,char address,char job)
+{
+  return(sendStandard("",BROADCAST,function,address,job,'?'));
+}
+
+bool Communication::broadcastString(char *text,char function,char address,char job)
+{
+  return(send(text,BROADCAST,'S',function,address,job,'T'));
+}
+
 bool Communication::broadcastUInt8(uint8_t wert,char function,char address,char job)
 {
 char text[10];
@@ -382,7 +396,7 @@ char text[10];
 void Communication::sendAnswer(char const *answer,char *answerTo, char function,char address,char job,uint8_t noerror)
 {
 //char tempString[36];
-//	LED_ROT_ON;
+//	LEDROT_ON;
 
 	char iHeader='R';
 	if(!noerror)
@@ -392,7 +406,7 @@ void Communication::sendAnswer(char const *answer,char *answerTo, char function,
       dataType = 'T';
 //	sprintf(tempString,"%c%c%c%s%c",function,address_KNET,job,answer,sign);
 	send(answer,answerTo,iHeader,function,address,job,dataType);
-//	LED_ROT_OFF; #17DMeH1.36.260311<07d4
+//	LEDROT_OFF; #17DMeH1.36.260311<07d4
 }
 
 void Communication::sendPureAnswer(char *answerTo, char function,char address,char job,uint8_t noerror)
@@ -586,7 +600,7 @@ ISR( Busy_Control_IntVec_0 )
   sendFree_0 = false;
   sendAnswerFree_0 = false;
   BUSY_TIMER.LCNT = 20;
-//  LED_ROT_ON;
+//  LEDROT_ON;
 }
 #endif // USE_BUSY_0
 
@@ -596,7 +610,7 @@ ISR( Busy_Control_IntVec_1 )
   sendFree_1 = false;
   sendAnswerFree_1 = false;
   BUSY_TIMER.LCNT = 20;
-  //LED_ROT_ON;
+  //LEDROT_ON;
 }
 #endif // USE_BUSY_1
 
@@ -606,7 +620,7 @@ ISR ( Busy_Control_TimVec_0 )
   if(sendAnswerFree_0 == true )
   {
       sendFree_0 = true;
-      //LED_ROT_OFF;
+      //LEDROT_OFF;
   }
   else
       sendAnswerFree_0 = true;
@@ -620,7 +634,7 @@ ISR ( Busy_Control_TimVec_1 )
   if(sendAnswerFree_1 == true )
   {
       sendFree_1 = true;
-      //LED_ROT_OFF;
+      //LEDROT_OFF;
   }
   else
       sendAnswerFree_1 = true;

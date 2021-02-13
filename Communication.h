@@ -113,6 +113,8 @@ public:
   void sendAnswerDouble(char *answerTo, char function,char address,char job,double wert,uint8_t noerror);
   bool broadcastFloat(float wert,char function,char address,char job);
   bool broadcastDouble(double wert,char function,char address,char job);
+  bool broadcast(char function,char address,char job);
+  bool broadcastString(char *text,char function,char address,char job);
   bool broadcastUInt8(uint8_t wert,char function,char address,char job);
   bool broadcastUInt16(uint16_t wert,char function,char address,char job);
   bool broadcastInt16(int16_t wert,char function,char address,char job);
