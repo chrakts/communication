@@ -152,7 +152,7 @@ void Serial::open(uint8_t baud, uint32_t frq)
 
 void Serial::transmit( uint8_t data )
 {
-	if (PortNumber==0) // Achtung: Implementierung entsprcht noch nicht dem USE_RS485_1 !!!!!!!!!!!!!!!!!!!!!!!!!!!
+	if (PortNumber==0) // Achtung: Implementierung entspricht noch nicht dem USE_RS485_1 !!!!!!!!!!!!!!!!!!!!!!!!!!!
 	{
 		#ifdef USE_RS485_0
 			while (  ( ((PORT_t *) &SERIAL_PORT_0)->IN & SERIAL_TE_PIN_0 ) != 0  )
@@ -454,13 +454,13 @@ char c;
 	c= ((USART_t *) &SERIAL_1)->DATA;
 
 // das auskommentierte braucht man nur, wenn der RS485 durch das Umschalten falsche Nullen schickt
-//	if (c!=0)
-//	{
+	if (c!=0)
+	{
 		UART1_ring_received++;
 		if(UART1_ring_received == UART1_RING_BUFFER_SIZE)
             UART1_ring_received = 0;
 		UART1_ring_buffer[UART1_ring_received]=c;
-//	}
+	}
 
 
 }
