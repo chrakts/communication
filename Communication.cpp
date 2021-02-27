@@ -369,7 +369,7 @@ bool Communication::broadcast(char function,char address,char job)
   return(sendStandard("",BROADCAST,function,address,job,'?'));
 }
 
-bool Communication::broadcastString(char *text,char function,char address,char job)
+bool Communication::broadcastString(char const *text,char function,char address,char job)
 {
   return(send(text,BROADCAST,'S',function,address,job,'T'));
 }
@@ -550,7 +550,7 @@ void Communication::initReadMonitor(uint8_t num)
   }
   else
   {
-    Busy_Control_Port_1.INTCTRL  |= PORT_INT1LVL_HI_gc; // High-Level interrupt 0 for PORTD
+    Busy_Control_Port_1.INTCTRL  |= PORT_INT1LVL_HI_gc; // High-Level interrupt 1 for PORTD
     Busy_Control_Port_1.INT1MASK = Busy_Control_Pin_1;
     Busy_Control_Port_1.Busy_Control_PinCtrl_1 = PORT_ISC_BOTHEDGES_gc | PORT_OPC_PULLUP_gc ;
   }
@@ -567,7 +567,7 @@ void Communication::deInitReadMonitor(uint8_t num)
   else
   {
     Busy_Control_Port_1.INTCTRL  &= ~PORT_INT1LVL_HI_gc;
-    Busy_Control_Port_1.INT0MASK = Busy_Control_Pin_1;
+    Busy_Control_Port_1.INT1MASK = 0;
     Busy_Control_Port_1.Busy_Control_PinCtrl_1 = PORT_ISC_INPUT_DISABLE_gc | PORT_OPC_PULLUP_gc ;
   }
 }
@@ -579,18 +579,18 @@ void Communication::initBusyCounter(uint8_t num)
     BUSY_TIMER.CTRLE = TC2_BYTEM_SPLITMODE_gc;
     BUSY_TIMER.CTRLA = TC2_CLKSEL_DIV256_gc;
     BUSY_TIMER.CTRLB = 0;
-    BUSY_TIMER.INTCTRLA = TC2_LUNFINTLVL_HI_gc;
-    BUSY_TIMER.LCNT = 128; // 128
-    BUSY_TIMER.LPER = 42;
+    BUSY_TIMER.INTCTRLA |= TC2_LUNFINTLVL_HI_gc;
+    BUSY_TIMER.LCNT = 21; // 128
+    BUSY_TIMER.LPER = 21;
   }
   else
   {
     BUSY_TIMER.CTRLE = TC2_BYTEM_SPLITMODE_gc;
     BUSY_TIMER.CTRLA = TC2_CLKSEL_DIV256_gc;
     BUSY_TIMER.CTRLB = 0;
-    BUSY_TIMER.INTCTRLA = TC2_LUNFINTLVL_HI_gc;
-    BUSY_TIMER.HCNT = 128; // 128
-    BUSY_TIMER.HPER = 42;
+    BUSY_TIMER.INTCTRLA |= TC2_HUNFINTLVL_HI_gc;
+    BUSY_TIMER.HCNT = 21; // 128
+    BUSY_TIMER.HPER = 21;
   }
 }
 
@@ -599,8 +599,8 @@ ISR( Busy_Control_IntVec_0 )
 {
   sendFree_0 = false;
   sendAnswerFree_0 = false;
-  BUSY_TIMER.LCNT = 20;
-//  LEDROT_ON;
+  BUSY_TIMER.LCNT = 21;
+  //LEDROT_ON;
 }
 #endif // USE_BUSY_0
 
@@ -609,8 +609,8 @@ ISR( Busy_Control_IntVec_1 )
 {
   sendFree_1 = false;
   sendAnswerFree_1 = false;
-  BUSY_TIMER.LCNT = 20;
-  //LEDROT_ON;
+  BUSY_TIMER.HCNT = 21;
+  LEDROT_ON;
 }
 #endif // USE_BUSY_1
 
@@ -624,7 +624,8 @@ ISR ( Busy_Control_TimVec_0 )
   }
   else
       sendAnswerFree_0 = true;
-  BUSY_TIMER.LCNT = 20;
+  //BUSY_TIMER.LCNT = 20;
+
 }
 #endif // USE_BUSY_0
 
@@ -634,10 +635,12 @@ ISR ( Busy_Control_TimVec_1 )
   if(sendAnswerFree_1 == true )
   {
       sendFree_1 = true;
-      //LEDROT_OFF;
   }
   else
+  {
       sendAnswerFree_1 = true;
-  BUSY_TIMER.HCNT = 20;
+      LEDROT_OFF;
+  }
+  //BUSY_TIMER.HCNT = 20;
 }
 #endif // USE_BUSY_1
