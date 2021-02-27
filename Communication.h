@@ -19,6 +19,8 @@
 #include "Serial.h"
 #include "CRC_Calc.h"
 
+#include "ledHardware.h"
+
 #define SEND_BUFFER_LENGTH 60
 #define WITH_CHECKSUM		4
 #define WITH_AES256 2
@@ -114,7 +116,7 @@ public:
   bool broadcastFloat(float wert,char function,char address,char job);
   bool broadcastDouble(double wert,char function,char address,char job);
   bool broadcast(char function,char address,char job);
-  bool broadcastString(char *text,char function,char address,char job);
+  bool broadcastString(char const *text,char function,char address,char job);
   bool broadcastUInt8(uint8_t wert,char function,char address,char job);
   bool broadcastUInt16(uint16_t wert,char function,char address,char job);
   bool broadcastInt16(int16_t wert,char function,char address,char job);
