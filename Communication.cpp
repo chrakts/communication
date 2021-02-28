@@ -11,9 +11,8 @@
 #include "CRC_Calc.h"
 
 volatile uint8_t sendFree_0;
-volatile uint8_t sendAnswerFree_0;
 volatile uint8_t sendFree_1;
-volatile uint8_t sendAnswerFree_1;
+
 /*---------------------------------------------------------------------------------------------------*/
 /*---------------------------------------------------------------------------------------------------*/
 /*---------------------------------------------------------------------------------------------------*/
@@ -471,14 +470,14 @@ bool Communication::print(char const *text)
     {
       bool error = false;
       int i = 0;			// Zeichen empfangen
-      int j = 0;			// Zeichen zur Uebertragung
-      while(*sendFree==false) ;
+      int j = 0;			// Zeichen zur Übertragung
+      while(*sendFree>0) ;
       input_flush();
       while(j<len && (error!=true))
       {
         transmit(text[j]);
         _delay_us(50);
-        *sendFree=false;     // notwendig, weil sendFree durch den Interrupt zu spaet gesetzt wird.
+        *sendFree=3;     // notwendig, weil sendFree durch den Interrupt zu spät gesetzt wird.
         j++;
         if (getChar(c))
         {
@@ -492,7 +491,7 @@ bool Communication::print(char const *text)
           }
           i++;
         }
-        if (*sendFree==true)		// dann ist so lange nichts mehr gesendet worden, dass ein Fehler vorliegen muss
+        if (*sendFree==0)		// dann ist so lange nichts mehr gesendet worden, dass ein Fehler vorliegen muss
         {
           error=true;
         }
@@ -511,7 +510,7 @@ bool Communication::print(char const *text)
           }
           i++;
         }
-        if (*sendFree==true)		// dann ist so lange nichts mehr gesendet worden, dass ein Fehler vorliegen muss
+        if (*sendFree==0)		// dann ist so lange nichts mehr gesendet worden, dass ein Fehler vorliegen muss
         {
           error=true;
         }
@@ -580,8 +579,8 @@ void Communication::initBusyCounter(uint8_t num)
     BUSY_TIMER.CTRLA = TC2_CLKSEL_DIV256_gc;
     BUSY_TIMER.CTRLB = 0;
     BUSY_TIMER.INTCTRLA |= TC2_LUNFINTLVL_HI_gc;
-    BUSY_TIMER.LCNT = 21; // 128
-    BUSY_TIMER.LPER = 21;
+    BUSY_TIMER.LCNT = BUSYTIME_TICKS; // 128
+    BUSY_TIMER.LPER = BUSYTIME_TICKS;
   }
   else
   {
@@ -589,58 +588,39 @@ void Communication::initBusyCounter(uint8_t num)
     BUSY_TIMER.CTRLA = TC2_CLKSEL_DIV256_gc;
     BUSY_TIMER.CTRLB = 0;
     BUSY_TIMER.INTCTRLA |= TC2_HUNFINTLVL_HI_gc;
-    BUSY_TIMER.HCNT = 21; // 128
-    BUSY_TIMER.HPER = 21;
+    BUSY_TIMER.HCNT = BUSYTIME_TICKS; // 128
+    BUSY_TIMER.HPER = BUSYTIME_TICKS;
   }
 }
 
 #if USE_BUSY_0 == true
 ISR( Busy_Control_IntVec_0 )
 {
-  sendFree_0 = false;
-  sendAnswerFree_0 = false;
-  BUSY_TIMER.LCNT = 21;
-  //LEDROT_ON;
+  sendFree_0 = 3;
 }
 #endif // USE_BUSY_0
 
 #if USE_BUSY_1 == true
 ISR( Busy_Control_IntVec_1 )
 {
-  sendFree_1 = false;
-  sendAnswerFree_1 = false;
-  BUSY_TIMER.HCNT = 21;
-  LEDROT_ON;
+  sendFree_1 = 3;
 }
 #endif // USE_BUSY_1
 
 #if USE_BUSY_0 == true
 ISR ( Busy_Control_TimVec_0 )
 {
-  if(sendAnswerFree_0 == true )
-  {
-      sendFree_0 = true;
-      //LEDROT_OFF;
-  }
-  else
-      sendAnswerFree_0 = true;
-  //BUSY_TIMER.LCNT = 20;
-
+  if(sendFree_0 > 0 )
+      sendFree_0--;
 }
 #endif // USE_BUSY_0
 
 #if USE_BUSY_1==true
 ISR ( Busy_Control_TimVec_1 )
 {
-  if(sendAnswerFree_1 == true )
+  if( sendFree_1 > 0 )
   {
-      sendFree_1 = true;
+      sendFree_1--;
   }
-  else
-  {
-      sendAnswerFree_1 = true;
-      LEDROT_OFF;
-  }
-  //BUSY_TIMER.HCNT = 20;
 }
 #endif // USE_BUSY_1

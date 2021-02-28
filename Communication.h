@@ -26,10 +26,10 @@
 #define WITH_AES256 2
 #define BROADCAST "BR"
 
+#define BUSYTIME_TICKS  (int)(300.0/256.0*(F_CPU/1.0e6))
+
 extern volatile uint8_t sendFree_0;
-extern volatile uint8_t sendAnswerFree_0;
 extern volatile uint8_t sendFree_1;
-extern volatile uint8_t sendAnswerFree_1;
 
 enum EncryptMode {ENCRYPT_UNDEFINED=0, ENCRYPT_KEYDEFINED=1, ENCRYPT_SUBKEYDEFINED=2};
 
@@ -39,7 +39,6 @@ class Communication: public Serial
 public:
 protected:
   volatile uint8_t *sendFree=nullptr;
-  volatile uint8_t *sendAnswerFree=nullptr;
 	char sendBuffer[SEND_BUFFER_LENGTH];
 	char source[3];
 	char saveSource[3];
@@ -70,14 +69,12 @@ public:
 		{
 #if USE_BUSY_0==true
       sendFree = &sendFree_0;
-      sendAnswerFree = &sendAnswerFree_0;
 #endif // USE_BUSY_0
 		}
 		else
 		{
 #if USE_BUSY_1==true
       sendFree = &sendFree_1;
-      sendAnswerFree = &sendAnswerFree_1;
 #endif // USE_BUSY_1
 		}
 	};
