@@ -19,8 +19,6 @@
 #include "Serial.h"
 #include "CRC_Calc.h"
 
-#include "ledHardware.h"
-
 #define SEND_BUFFER_LENGTH 60
 #define WITH_CHECKSUM		4
 #define WITH_AES256 2
