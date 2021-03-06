@@ -543,13 +543,13 @@ void Communication::initReadMonitor(uint8_t num)
 {
   if(num==0)
   {
-    Busy_Control_Port_0.INTCTRL  |= PORT_INT0LVL_HI_gc; // High-Level interrupt 0 for PORTD
+    Busy_Control_Port_0.INTCTRL  |= PORT_INT0LVL_MED_gc; // High-Level interrupt 0 for PORTD
     Busy_Control_Port_0.INT0MASK = Busy_Control_Pin_0;
     Busy_Control_Port_0.Busy_Control_PinCtrl_0 = PORT_ISC_BOTHEDGES_gc | PORT_OPC_PULLUP_gc ;
   }
   else
   {
-    Busy_Control_Port_1.INTCTRL  |= PORT_INT1LVL_HI_gc; // High-Level interrupt 1 for PORTD
+    Busy_Control_Port_1.INTCTRL  |= PORT_INT1LVL_MED_gc; // High-Level interrupt 1 for PORTD
     Busy_Control_Port_1.INT1MASK = Busy_Control_Pin_1;
     Busy_Control_Port_1.Busy_Control_PinCtrl_1 = PORT_ISC_BOTHEDGES_gc | PORT_OPC_PULLUP_gc ;
   }
@@ -559,13 +559,13 @@ void Communication::deInitReadMonitor(uint8_t num)
 {
   if(num==0)
   {
-    Busy_Control_Port_0.INTCTRL  &= ~PORT_INT0LVL_HI_gc;
+    Busy_Control_Port_0.INTCTRL  &= ~PORT_INT0LVL_MED_gc;
     Busy_Control_Port_0.INT0MASK = 0;
     Busy_Control_Port_0.Busy_Control_PinCtrl_0 = PORT_ISC_INPUT_DISABLE_gc | PORT_OPC_PULLUP_gc ;
   }
   else
   {
-    Busy_Control_Port_1.INTCTRL  &= ~PORT_INT1LVL_HI_gc;
+    Busy_Control_Port_1.INTCTRL  &= ~PORT_INT1LVL_MED_gc;
     Busy_Control_Port_1.INT1MASK = 0;
     Busy_Control_Port_1.Busy_Control_PinCtrl_1 = PORT_ISC_INPUT_DISABLE_gc | PORT_OPC_PULLUP_gc ;
   }
@@ -578,7 +578,7 @@ void Communication::initBusyCounter(uint8_t num)
     BUSY_TIMER.CTRLE = TC2_BYTEM_SPLITMODE_gc;
     BUSY_TIMER.CTRLA = TC2_CLKSEL_DIV256_gc;
     BUSY_TIMER.CTRLB = 0;
-    BUSY_TIMER.INTCTRLA |= TC2_LUNFINTLVL_HI_gc;
+    BUSY_TIMER.INTCTRLA |= TC2_LUNFINTLVL_LO_gc;
     BUSY_TIMER.LCNT = BUSYTIME_TICKS; // 128
     BUSY_TIMER.LPER = BUSYTIME_TICKS;
   }
@@ -587,7 +587,7 @@ void Communication::initBusyCounter(uint8_t num)
     BUSY_TIMER.CTRLE = TC2_BYTEM_SPLITMODE_gc;
     BUSY_TIMER.CTRLA = TC2_CLKSEL_DIV256_gc;
     BUSY_TIMER.CTRLB = 0;
-    BUSY_TIMER.INTCTRLA |= TC2_HUNFINTLVL_HI_gc;
+    BUSY_TIMER.INTCTRLA |= TC2_HUNFINTLVL_LO_gc;
     BUSY_TIMER.HCNT = BUSYTIME_TICKS; // 128
     BUSY_TIMER.HPER = BUSYTIME_TICKS;
   }
