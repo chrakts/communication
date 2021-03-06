@@ -476,16 +476,16 @@ bool Communication::print(char const *text)
       while(j<len && (error!=true))
       {
         transmit(text[j]);
-        _delay_us(50);
+        //_delay_us(50);  // war 50
         *sendFree=3;     // notwendig, weil sendFree durch den Interrupt zu spät gesetzt wird.
         j++;
         if (getChar(c))
         {
           if (text[i]!=c)
           {
-  /*					debug.print("fault1");
-            debug.print(":");
-            debug.print(text);*/
+  					print("!f1:");
+            transmit(c);
+            print(":");
             error = true;
             break;
           }
