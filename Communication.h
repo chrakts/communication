@@ -80,6 +80,7 @@ public:
 	void setAlternativeNode(char *altNode);
 	void setEncryption(uint8_t *_random=nullptr);
   void clearEncryption();
+  void clearChecksum();
   void encryptSetKey(uint8_t *newkey);
   uint8_t encryptDataDirect(uint8_t *data);
   uint8_t encryptDataWait();

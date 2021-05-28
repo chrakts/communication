@@ -39,6 +39,11 @@ void Communication::clearEncryption()
   random = nullptr;
 }
 
+void Communication::clearChecksum()
+{
+  header &= ~WITH_CHECKSUM;
+}
+
 void Communication::setAlternativeNode(char *altNode)
 {
   strcpy(saveSource,source);
@@ -125,11 +130,13 @@ char locText[33];
   }
   else
     sprintf(sendBuffer,"#%02x%c%s%s%c%s%s%c",l,header,target,source,infoHeader,extraInfo,text,parameterEndChar);
-  crcGlobal.Reset();
-  crcGlobal.String(sendBuffer);
-  crcGlobal.Get_CRC(crcTemp);
-  sprintf(sendBuffer,"%s%s\r\n",sendBuffer,crcTemp);
-
+  if (header & WITH_CHECKSUM)
+  {
+    crcGlobal.Reset();
+    crcGlobal.String(sendBuffer);
+    crcGlobal.Get_CRC(crcTemp);
+    sprintf(sendBuffer,"%s%s\r\n",sendBuffer,crcTemp);
+  }
   clearEncryption();
 
   return(print(sendBuffer));
@@ -430,7 +437,7 @@ char str[25];
 void Communication::sendStandardDouble(char const *target, char function,char address,char job,double wert)
 {
 char str[25];
-	sprintf(str,"%f",wert);
+	sprintf(str,"%.3f",wert);
 	sendStandard(str,target,function,address,job,'T');
 }
 
