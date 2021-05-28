@@ -63,9 +63,12 @@ char crcTemp[5];
     parameterEndChar=0;
 	//sprintf(sendBuffer,"#%02x%c%s%s%c%s%s<",l,header,target,source,infoHeader,extraInfo,text);
 	sprintf(sendBuffer,"%c%s%s%c%s%s%c",header,target,source,infoHeader,extraInfo,text,parameterEndChar);
-	crcGlobal.Reset();
-	crcGlobal.String(sendBuffer);
-	crcGlobal.Get_CRC(crcTemp);
-	sprintf(sendBuffer,"%s%s",sendBuffer,crcTemp);
+  if (header & WITH_CHECKSUM)
+  {
+    crcGlobal.Reset();
+    crcGlobal.String(sendBuffer);
+    crcGlobal.Get_CRC(crcTemp);
+    sprintf(sendBuffer,"%s%s",sendBuffer,crcTemp);
+  }
 	return(print(sendBuffer));
 }

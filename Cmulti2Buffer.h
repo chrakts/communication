@@ -2,7 +2,7 @@
 #define CMULTI2BUFFER_H
 
 #include <Communication.h>
-#include "../loraSupervisor/Operators.h"
+#include "../LoraRelais/Operators.h"
 
 #define WITH_CHECKSUM		4
 #define BROADCAST "BR"
