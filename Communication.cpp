@@ -44,6 +44,11 @@ void Communication::clearChecksum()
   header &= ~WITH_CHECKSUM;
 }
 
+void Communication::setChecksum()
+{
+  header |= WITH_CHECKSUM;
+}
+
 void Communication::setAlternativeNode(char *altNode)
 {
   strcpy(saveSource,source);
@@ -94,7 +99,7 @@ char locText[33];
       for (i=l;i<16;i++)
         locText[i] = 0;
     }
-    l=32;
+    l=33;
     encryptDataDirect((uint8_t*)locText);
   }
   l+=9;
@@ -137,6 +142,8 @@ char locText[33];
     crcGlobal.Get_CRC(crcTemp);
     sprintf(sendBuffer,"%s%s\r\n",sendBuffer,crcTemp);
   }
+  else
+    sprintf(sendBuffer,"%s\r\n",sendBuffer);
   clearEncryption();
 
   return(print(sendBuffer));
