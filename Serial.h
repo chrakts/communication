@@ -32,6 +32,8 @@ public:
 	~Serial();
 
 	void open(uint8_t baud, uint32_t frq);
+	void sleep();
+	void wakeup();
 	virtual void transmit( uint8_t data );
 	void println(const char *text);
 	void println();

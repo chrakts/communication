@@ -148,7 +148,27 @@ void Serial::open(uint8_t baud, uint32_t frq)
 	}
 }
 
+void Serial::sleep()
+{
+  if(PortNumber==0)
+  {
+    SERIAL_PORT_0.OUTSET = SERIAL_RE_PIN_0;
+    SERIAL_PORT_0.OUTCLR = SERIAL_TE_PIN_0;
+  }
+  else
+  {
+    SERIAL_PORT_1.OUTSET = SERIAL_RE_PIN_0;
+    SERIAL_PORT_1.OUTCLR = SERIAL_TE_PIN_0;
+  }
+}
 
+void Serial::wakeup()
+{
+  if(PortNumber==0)
+    SERIAL_PORT_0.OUTCLR = SERIAL_RE_PIN_0;
+  else
+    SERIAL_PORT_1.OUTCLR = SERIAL_RE_PIN_0;
+}
 
 void Serial::transmit( uint8_t data )
 {
