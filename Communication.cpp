@@ -5,8 +5,6 @@
 * Author: chrak_2
 */
 
-
-
 #include "Communication.h"
 #include "CRC_Calc.h"
 
