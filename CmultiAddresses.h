@@ -11,4 +11,9 @@
 #define R2 "R2"
 #define R3 "R3"
 
+// Tastersteuerung
+#define T0 "T0"  // 5x3 Tastaturmatrix
+#define T1 "T1"  //
+#define T2 "T2"  //
+
 #endif // CMULTIADDRESSES_H_INCLUDED
